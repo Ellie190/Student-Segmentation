@@ -57,7 +57,7 @@ round(sd(svle_df$sum_click),3)
 
 ```{r}
 # Sum of clicks percentiles 
-quantile(svle_df$sum_click, c(.25, .50, .75, .90, 1)) 
+quantile(svle_df$sum_click, c(.25, .50, .75, .90, .95, .97, .99, .999, .9999, 1)) 
 ```
 
 

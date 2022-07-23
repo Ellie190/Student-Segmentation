@@ -3,3 +3,9 @@
 *.out
 *.app
 .Rproj.user
+
+# OULAD Folder
+oulad/
+
+# Notebook checkpoints
+.ipynb_checkpoints/

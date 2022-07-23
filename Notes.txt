@@ -32,6 +32,7 @@ Sampling:
 Python 
 - Google 1: silhoutte method in python
 - Google 1 Source: KMeans Silhouette Score Explained With Python Example
+- Google 1 Source: https://dzone.com/articles/kmeans-silhouette-score-explained-with-python-exam
 - Google 1 Source: https://scikit-learn.org/stable/auto_examples/cluster/plot_kmeans_silhouette_analysis.html
 - Google 1 Source: https://www.kaggle.com/code/funxexcel/p2-sklearn-k-means-elbow-and-silhouette-method/notebook
 - Google 2: Gap Statistics method in python
@@ -46,6 +47,12 @@ Towards Data Science
 Information sources:
 - https://uc-r.github.io/kmeans_clustering
 - https://the-algorithms.com/
+
+Segmentation Notebook Found Online
+- https://github.com/IDB-FOR-DATASCIENCE/Unsupervised-ML-Modelling-for-Segmentation
+
+Execution Time in Python
+- https://pynative.com/python-get-execution-time-of-program/
 
 
 
