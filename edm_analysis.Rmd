@@ -82,11 +82,6 @@ sc_kmeans_df %>% head()
 The use of set. seed is to make sure that we get the same results for randomization. If we randomly select some observations for any task in R or in any statistical software it results in different values all the time and this happens because of randomization.
 ```{r}
 set.seed(123)
-# Sys.setenv('R_MAX_VSIZE'=32000000000) 
-# library(bigmemory)
-# sc_df <- as.big.matrix(sc_df)
-#memory.limit(8000)
-#fviz_nbclust(sc_df[,], kmeans, method = "wss")
 ```
 
 
@@ -163,221 +158,239 @@ plot(gmm_fit, 'BIC')
 ```
 
 
-
+## Stratified Sampling
 ```{r}
-# K-means clustering with subset of the dataset
-kmeans_clust <- kmeans(head(sc_df, 10000), centers = 9, nstart = 25)
+db_df <- svle_df %>% 
+  filter(code_presentation %in% "2014J")
+db_df
 ```
 
 
 
 ```{r}
-# GMM clustering with subset of the dataset
-gmm_clust <- Mclust(head(sc_t, 10000), 9) 
+library(tigerstats)
 ```
 
 
 
 ```{r}
-
+# 2014J Data 
+favstats(db_df$sum_click)
 ```
 
 
 
 ```{r}
-
+set.seed(1937)
+AAA=subset(db_df,code_module == "AAA")
+AAA_samp=popsamp(2500,AAA)
+AAA_samp
 ```
 
 
 
 ```{r}
-
+set.seed(1837)
+BBB = subset(db_df,code_module == "BBB")
+BBB_samp = popsamp(2500,BBB)
+BBB_samp
 ```
 
 
 
 ```{r}
-
+set.seed(1737)
+CCC = subset(db_df,code_module == "CCC")
+CCC_samp = popsamp(2500,CCC)
+CCC_samp
 ```
 
 
 
 ```{r}
-
+set.seed(1637)
+DDD = subset(db_df,code_module == "DDD")
+DDD_samp = popsamp(2500,DDD)
+DDD_samp
 ```
 
 
 
 ```{r}
-
+set.seed(1537)
+EEE = subset(db_df,code_module == "EEE")
+EEE_samp = popsamp(2500,EEE)
+EEE_samp
 ```
 
 
 
 ```{r}
-
+set.seed(1437)
+FFF = subset(db_df,code_module == "FFF")
+FFF_samp = popsamp(2500,FFF)
+FFF_samp
 ```
 
 
 
 ```{r}
-
+set.seed(1337)
+GGG = subset(db_df,code_module == "GGG")
+GGG_samp = popsamp(2500,GGG)
+GGG_samp
 ```
 
 
 
 ```{r}
-
+strat_samp = rbind(AAA_samp, BBB_samp, CCC_samp, DDD_samp, EEE_samp, FFF_samp, GGG_samp)
+strat_samp
 ```
 
 
 
 ```{r}
-
+favstats(db_df$sum_click)
 ```
 
 
 
 ```{r}
-
+favstats(strat_samp$sum_click)
 ```
 
 
 
 ```{r}
+object.size(strat_samp)
+```
 
+
+### GMM Model 
+```{r}
+ss_gmm_df <- select(strat_samp, sum_click)
 ```
 
 
 
 ```{r}
-
+gmm_model <- Mclust(ss_gmm_df, G=8)
 ```
 
 
 
 ```{r}
-
+print(gmm_model)
 ```
 
 
 
 ```{r}
-
+summary(gmm_model)
 ```
 
 
 
 ```{r}
-
+strat_samp$cluster <- gmm_model$classification
+strat_samp$uncertainty <- gmm_model$uncertainty
 ```
 
 
 
 ```{r}
-
+# Obtain used cluster averages and number of observations in each cluster. 
+strat_samp %>%
+  group_by(cluster) %>%
+  summarise(sum_clicks = mean(sum_click),
+            Number_of_students = n())
 ```
 
 
 
 ```{r}
-
+# Exclude scientific outputs
+view(format(strat_samp, scientific = FALSE))
 ```
 
 
 
 ```{r}
-
+# Plot our results.
+plot(gmm_model, what = "classification", main = "Mclust Classification")
 ```
 
 
 
 ```{r}
+# Cluster means (output this in a transposed form)
+gmm_model$parameters$mean
+```
 
+
+- https://www.rdocumentation.org/packages/mclust/versions/5.4.7/topics/Mclust
+```{r}
+# Probability of belonging to each cluster
+format(round(gmm_model$z, 5), scientific = FALSE)
 ```
 
 
 
 ```{r}
-
+gmm_model$parameters$pro
 ```
 
 
 
 ```{r}
-
+student_clicks <- svle_df %>% 
+  group_by(id_student) %>% 
+  summarise(sum_clicks = sum(sum_click))
 ```
 
 
 
 ```{r}
-
+favstats(svle_df$date)
 ```
 
 
 
 ```{r}
-
+favstats(student_clicks$sum_clicks)
 ```
 
 
 
 ```{r}
-
+view(student_clicks)
 ```
 
 
 
 ```{r}
-
+student_clicks_gmm <- select(student_clicks, sum_clicks)
 ```
 
 
 
 ```{r}
-
+gmm_model2 <- Mclust(student_clicks_gmm, G=8)
 ```
 
 
 
 ```{r}
-
+summary(gmm_model2)
 ```
 
 
 
 ```{r}
-
-```
-
-
-
-```{r}
-
-```
-
-
-
-```{r}
-
-```
-
-
-
-```{r}
-
-```
-
-
-
-```{r}
-
-```
-
-
-
-```{r}
-
+svle_df %>% 
+  group_by(id_site) %>% 
+  summarise(n = n())
 ```
 
 
