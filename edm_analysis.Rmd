@@ -396,67 +396,81 @@ svle_df %>%
 
 
 ```{r}
-
+gmm_model2$parameters$mean
 ```
 
 
 
 ```{r}
+hist(student_clicks$sum_clicks, breaks = 50)
+```
 
+
+```{r}
+favstats(svle_df$date)
+```
+
+
+```{r}
+svle_df %>% 
+  filter(date >=-25 & date <= -18) %>% 
+  group_by(id_student) %>% 
+  summarise(sum_clicks = sum(sum_click))
 ```
 
 
 
 ```{r}
-
+student_clicks$cluster <- gmm_model2$classification
+student_clicks$uncertainty <- gmm_model2$uncertainty
 ```
 
 
 
 ```{r}
-
+# Exclude scientific outputs
+view(format(student_clicks, scientific = FALSE))
 ```
 
 
 
 ```{r}
+options(scipen=999)
+View(student_clicks) 
+```
 
+
+### Cluster Mean Table
+```{r}
+cluster_mean_df <- as.data.frame(gmm_model2$parameters$mean)
+colnames(cluster_mean_df) <- "cluster_mean"
+cluster_mean_df
+# Rename rownames to date in R
+cluster_mean_df <- cbind(cluster = rownames(cluster_mean_df), cluster_mean_df)
+# Remove rownames 
+rownames(cluster_mean_df) <- NULL
+cluster_mean_df
 ```
 
 
 
 ```{r}
-
+# Obtain number of observations in each cluster. 
+student_clicks %>%
+  group_by(cluster) %>%
+  summarise(Number_of_students = n())
 ```
 
 
 
 ```{r}
-
+summary(gmm_model2)
 ```
 
 
 
 ```{r}
-
-```
-
-
-
-```{r}
-
-```
-
-
-
-```{r}
-
-```
-
-
-
-```{r}
-
+gmm_model2
 ```
 
 

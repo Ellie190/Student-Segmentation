@@ -54,5 +54,14 @@ Segmentation Notebook Found Online
 Execution Time in Python
 - https://pynative.com/python-get-execution-time-of-program/
 
+MClust Documentation
+- https://www.rdocumentation.org/packages/mclust/versions/5.4.7/topics/Mclust
+
+Mclust Interpretation
+- https://bradleyboehmke.github.io/HOML/model-clustering.html
+
+Execution Time
+- Use a function from the Cryptography Assignment to observe execution time of K-meaans and GMM 
+
 
 
