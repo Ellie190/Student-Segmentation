@@ -413,7 +413,7 @@ favstats(svle_df$date)
 
 ```{r}
 svle_df %>% 
-  filter(date >=-25 & date <= -18) %>% 
+  filter(date >=-25 & date <= 269) %>% 
   group_by(id_student) %>% 
   summarise(sum_clicks = sum(sum_click))
 ```
