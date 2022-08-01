@@ -174,14 +174,14 @@ cluster_probabilitics %>% head()
 
 #### Cluster Mean Table
 ```{r}
-cluster_mean_df <- as.data.frame(gmm_model$parameters$mean)
+cluster_mean_df <- as.data.frame(round(gmm_model$parameters$mean))
 colnames(cluster_mean_df) <- "cluster_mean"
 cluster_mean_df
 # Rename rownames to cluster 
 cluster_mean_df <- cbind(cluster = rownames(cluster_mean_df), cluster_mean_df)
 # Remove rownames 
 rownames(cluster_mean_df) <- NULL
-cluster_mean_df
+cluster_mean_df 
 ```
 
 
@@ -206,110 +206,219 @@ cluster_stats
 
 #### Distribution of Probabilities in each cluster
 ```{r}
-probabilities <- select(cluster_probabilitics, -cluster, -uncertainty, -id_student) %>%
-  as.data.frame() %>%
-  mutate(id = row_number()) %>%
-  tidyr::gather(cluster, probability, -id)
+# probabilities <- select(cluster_probabilitics, -cluster, -uncertainty, -id_student) %>%
+#   as.data.frame() %>%
+#   mutate(id = row_number()) %>%
+#   tidyr::gather(cluster, probability, -id)
+# 
+# ggplot(probabilities, aes(probability)) +
+#   geom_histogram() +
+#   facet_wrap(~ cluster, nrow = 6) 
+```
 
-ggplot(probabilities, aes(probability)) +
-  geom_histogram() +
-  facet_wrap(~ cluster, nrow = 6) 
+
+## Cluster Analysis Tab
+```{r}
+library(apexcharter)
+library(highcharter)
 ```
 
 
 
 ```{r}
+hchart(cluster_stats, "column", hcaes(x = cluster, y = cluster_mean), dataLabels = list(enabled = TRUE),
+       name = "Average No. of Clicks") %>% 
+  hc_title(
+    text = paste0("Average Number of Clicks for Each Engagement Level")
+  ) %>% 
+  hc_xAxis(title = list(text = "Engagement Level")) %>% 
+  hc_yAxis(title = list(text = "Average Number of Clicks"))
+```
 
+
+```{r}
+hchart(cluster_stats, "column", hcaes(x = cluster, y = Number_of_students), dataLabels = list(enabled = TRUE),
+       name = "No of Students") %>% 
+  hc_title(
+    text = paste0("Number of Students in Each Engagement Level")
+  ) %>% 
+  hc_xAxis(title = list(text = "Engagement Level")) %>% 
+  hc_yAxis(title = list(text = "Number of Students")) %>% 
+  hc_exporting(
+    enabled = TRUE)
+```
+
+
+```{r}
+hchart(clicks_df$sum_click, color = "#B71C1C", name = "Clicks") %>% 
+  hc_title(
+    text = paste0("Distribution of Clicks")
+  ) %>% 
+  hc_xAxis(title = list(text = "Number of Students")) %>% 
+  hc_yAxis(title = list(text = "Number of Clicks"))
+```
+
+
+- Add min, max, average statistical summary of uncertainty
+```{r}
+hchart(clicks_df$uncertainty, color = "#B71C1C", name = "Uncertainty") %>% 
+  hc_title(
+    text = paste0("Distribution of Engagement Level Assignment Uncertainty")
+  ) %>% 
+  hc_xAxis(title = list(text = "Uncertainty")) %>% 
+  hc_yAxis(title = list(text = "Number of Students"))
+```
+
+
+```{r}
+fig <- clicks_df %>%
+  plot_ly(
+    y = ~sum_click,
+    type = 'violin',
+    box = list(visible = T),meanline = list(visible = T), x0 = 'Clicks') 
+fig <- fig %>%
+  layout(
+    title = "Distribution of Clicks",
+    yaxis = list(title = "Number of Clicks", zeroline = F))
+fig
+```
+
+
+## Instructional Methods Tab
+```{r}
+vle_df <- vle
+vle_df
 ```
 
 
 
 ```{r}
-
+# For fast data operations
+library(data.table)
 ```
 
 
 
 ```{r}
-
+# Merging the dataframes to link students with activities
+svle_vle_df <- data.table::merge.data.table(student_vle, vle, by = "id_site")
+svle_vle_df
 ```
 
 
 
 ```{r}
-
+# Number of Times student accessed an activity 
+activity_df <- svle_vle_df %>% 
+  group_by(id_student,activity_type) %>% 
+  summarise(activity_access_count = n()) %>% 
+  as.data.frame()
+activity_df
 ```
 
 
 
 ```{r}
+clicks_activity_df <- merge.data.table(activity_df, clicks_df, by = "id_student")
+clicks_activity_df
+```
 
+
+Activity Categories 
+- Resources - resource, oucontent, folder, ouwiki, glossary, url
+- Assessment - quiz, questionnaire, external quiz
+- VLE Site/App - dualpane, repeatactivity, htmlactivity, sharedsubpage, ouelluminate, dataplus, page, homepage, forumng, subpage, oucollaborate 
+```{r}
+clicks_activity_df <- clicks_activity_df %>%
+  mutate(vle_activity = case_when(grepl("resource", activity_type) ~ "Resource",
+                       grepl("oucontent", activity_type) ~ "Resource",
+                       grepl("url", activity_type) ~ "Resource",
+                       grepl("ouwiki", activity_type) ~ "Resource",
+                       grepl("glossary", activity_type) ~ "Resource",
+                       grepl("folder", activity_type) ~ "Resource",
+                       grepl("quiz", activity_type) ~ "Assessment",
+                       grepl("questionnaire", activity_type) ~ "Assessment",
+                       grepl("externalquiz", activity_type) ~ "Assessment",
+                       grepl("subpage", activity_type) ~ "VLE Site/App",
+                       grepl("forumng", activity_type) ~ "VLE Site/App",
+                       grepl("page", activity_type) ~ "VLE Site/App",
+                       grepl("oucollaborate", activity_type) ~ "VLE Site/App",
+                       grepl("dataplus", activity_type) ~ "VLE Site/App",
+                       grepl("homepage", activity_type) ~ "VLE Site/App",
+                       grepl("ouelluminate", activity_type) ~ "VLE Site/App",
+                       grepl("dualpane", activity_type) ~ "VLE Site/App",
+                       grepl("repeatactivity", activity_type) ~ "VLE Site/App",
+                       grepl("htmlactivity", activity_type) ~ "VLE Site/App",
+                       grepl("sharedsubpage", activity_type) ~ "VLE Site/App")) 
+clicks_activity_df
 ```
 
 
 
 ```{r}
-
+# Number of occurrences for each activity 
+table(clicks_activity_df$vle_activity)
 ```
 
 
 
 ```{r}
-
+# Occurrences of activity types per cluster
+clicks_activity_df %>% 
+  group_by(cluster, vle_activity) %>%
+  summarise(activity_access_count = n())
 ```
 
 
 
 ```{r}
-
+activity_stats <- clicks_activity_df %>% 
+  filter(cluster %in% 1) %>%
+  group_by(cluster, activity_type) %>%
+  summarise(activity_access_count = n()) %>% 
+  mutate(activity_access_percent = round(activity_access_count / sum(activity_access_count) * 100, 2)) %>% 
+  arrange(desc(activity_access_percent))
+activity_stats
 ```
 
 
 
 ```{r}
-
+hchart(activity_stats, "column", hcaes(x = activity_type, y = activity_access_percent), 
+       dataLabels = list(enabled = TRUE, format = "{y}%"),
+       name = "% of Students") %>% 
+  hc_title(
+    text = paste0("Percentage of Students that Access each VLE Activity in Engagement Level ", 1)
+  ) %>% 
+  hc_xAxis(title = list(text = "VLE Activity")) %>% 
+  hc_yAxis(title = list(text = "Percentage (%) of Students")) %>% 
+  hc_exporting(
+    enabled = TRUE)
 ```
 
 
-
+- source: https://www.datanovia.com/en/lessons/highchart-interactive-bar-plot-in-r/
+- Color options are included
 ```{r}
+# Comparison between engagement levels 
+# Maximum number of comparison should be limited to 3 in dashboard
+activity_stats <- clicks_activity_df %>% 
+  filter(cluster %in% c(1,2, 3)) %>%
+  group_by(cluster, activity_type) %>%
+  summarise(activity_access_count = n()) %>% 
+  mutate(activity_access_percent = round(activity_access_count / sum(activity_access_count) * 100, 1)) %>% 
+  arrange(desc(activity_access_percent))
 
-```
-
-
-
-```{r}
-
-```
-
-
-
-```{r}
-
-```
-
-
-
-```{r}
-
-```
-
-
-
-```{r}
-
-```
-
-
-
-```{r}
-
-```
-
-
-
-```{r}
-
+hchart(activity_stats, "column", hcaes(x = activity_type, y = activity_access_percent, group = cluster), 
+       dataLabels = list(enabled = TRUE, format = "{y}"),
+       stacking = "normal") %>% 
+  hc_title(
+    text = paste0("Percentage of Students that Access each VLE Activity in Engagement Level")
+  ) %>% 
+  hc_xAxis(title = list(text = "VLE Activity")) %>% 
+  hc_yAxis(title = list(text = "Percentage (%) of Students")) %>% 
+  hc_exporting(
+    enabled = TRUE)
 ```
 
 

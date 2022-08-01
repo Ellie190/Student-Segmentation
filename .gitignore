@@ -10,4 +10,5 @@ oulad/
 # Notebook checkpoints
 .ipynb_checkpoints/
 
-.RData
+# ignore
+*.RData
