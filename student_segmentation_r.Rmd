@@ -39,8 +39,8 @@ library(plotly)
 - *sum_click* – the number of times a student interacts with the material in that day.
 ```{r}
 # Load student VLE data 
-svle_df <- student_vle
-svle_df %>% head()
+# svle_df <- student_vle
+# svle_df %>% head()
 student_vle %>% head()
 ```
 
@@ -48,29 +48,31 @@ student_vle %>% head()
 
 ```{r}
 # Percentage of missing values
-sum(is.na(svle_df$sum_click))/length(svle_df$sum_click) * 100
+sum(is.na(student_vle$sum_click))/length(student_vle$sum_click) * 100
 ```
 
 
 
 
 ```{r}
-favstats(svle_df$date)
+# Statistical Summary of Date indicator
+favstats(student_vle$date)
 ```
 
 
 
 ```{r}
-favstats(svle_df$sum_click)
+# Statistical Summary of Sum of Clicks
+favstats(student_vle$sum_click)
 ```
 
 
 
-#### Clicks Data
-- The number of times a unique student interacted with material(s) throughout the day / week / month / term / semester/ year will be summed
+#### Clickstream Data
+- The number of times a unique student interacted with material(s) throughout the day / week / month / term / semester/ year or a specific period will be summed
 - Since engagement behavior can change, the number of interaction will vary with different days / weeks or etc. As a student may have a 100 clicks in one week and 200 the next (showing higher/lower engagement) so clustering can be performed for different weeks
 ```{r}
-clicks_df <- svle_df %>% 
+clicks_df <- student_vle %>% 
   # filter(date >=-25 & date <= 269 & 
   # code_presentation %in% 2013J) %>%  Filter for the dashboard (days) and semester
   group_by(id_student) %>% 
@@ -81,6 +83,7 @@ clicks_df %>% head()
 
 
 ```{r}
+# Statistical Summary of Sum of Clicks for the filtered Period 
 favstats(clicks_df$sum_click)
 ```
 
@@ -112,6 +115,7 @@ end_time - start_time
 
 
 ```{r}
+# Model Objects
 print(gmm_model)
 ```
 
@@ -125,7 +129,7 @@ summary(gmm_model)
 
 
 ```{r}
-# Cluster Means
+# Cluster Means/Engagement Levels
 gmm_model$parameters$mean
 ```
 
@@ -133,7 +137,7 @@ gmm_model$parameters$mean
 - Unceratinty: A probability expressing the degree of uncertainty in a student belonging to a group
 ```{r}
 # Add clusters and uncertainty values to original dataset
-clicks_df$cluster <- gmm_model$classification
+clicks_df$engagement_level <- gmm_model$classification
 clicks_df$uncertainty <- gmm_model$uncertainty
 clicks_df %>% head()
 ```
@@ -148,17 +152,17 @@ options(scipen=999)
 ```
 
 
-# Probability of Student belonging to each cluster
+# Probability of Student belonging to each engagement level
 ```{r}
-# Probability of a student belonging to a cluster
-cluster_probabilitics <- gmm_model$z
-colnames(cluster_probabilitics) <- paste0('cluster', 1:gmm_model$G)
+# Probability of a student belonging to a engagement level
+engagement_level_probabilities <- gmm_model$z
+colnames(engagement_level_probabilities) <- paste0('engagement_level', 1:gmm_model$G)
 options(scipen=999)
 # Create probabilities data frame
-cluster_probabilitics <- cluster_probabilitics %>%
+engagement_level_probabilities <- engagement_level_probabilities %>%
   round(2) %>% 
   as.data.frame()
-cluster_probabilitics %>% head()
+engagement_level_probabilities %>% head()
 ```
 
 
@@ -166,47 +170,47 @@ cluster_probabilitics %>% head()
 - A table with the probability of a student belonging to each cluster, the cluster a student belongs to and the uncertainty with a student belonging to the particular cluster
 ```{r}
 # Add cluster belonging of student
-cluster_probabilitics$cluster <- clicks_df$cluster
-cluster_probabilitics$uncertainty <- gmm_model$uncertainty
-cluster_probabilitics$sum_click <- clicks_df$sum_click
-cluster_probabilitics$id_student <- clicks_df$id_student
-cluster_probabilitics %>% head()
+engagement_level_probabilities$engagement_level <- clicks_df$engagement_level
+engagement_level_probabilities$uncertainty <- round(gmm_model$uncertainty*100,2)
+engagement_level_probabilities$sum_click <- clicks_df$sum_click
+engagement_level_probabilities$id_student <- clicks_df$id_student
+engagement_level_probabilities %>% head()
 ```
 
 
 #### Cluster Mean Table
 ```{r}
-cluster_mean_df <- as.data.frame(round(gmm_model$parameters$mean))
-colnames(cluster_mean_df) <- "cluster_mean"
-cluster_mean_df
-# Rename rownames to cluster 
-cluster_mean_df <- cbind(cluster = rownames(cluster_mean_df), cluster_mean_df)
+engagement_level_avg_df <- as.data.frame(round(gmm_model$parameters$mean))
+colnames(engagement_level_avg_df) <- "average_clicks"
+engagement_level_avg_df
+# Rename rownames to engagement_level 
+engagement_level_avg_df <- cbind(engagement_level = rownames(engagement_level_avg_df), engagement_level_avg_df)
 # Remove rownames 
-rownames(cluster_mean_df) <- NULL
-cluster_mean_df 
+rownames(engagement_level_avg_df) <- NULL
+engagement_level_avg_df 
 ```
 
 
-#### Cluster Count Table
+#### Engagement Level Count Table
 ```{r}
 # Obtain number of observations in each cluster. 
-cluster_count_df <- clicks_df %>%
-  group_by(cluster) %>%
+engagement_level_count_df <- clicks_df %>%
+  group_by(engagement_level) %>%
   summarise(Number_of_students = n()) #%>% 
   # arrange(Number_of_students)
-cluster_count_df
+engagement_level_count_df
 ```
 
 
-#### Cluster Statistics Table
+#### Engagement Level Statistics Table
 ```{r}
-cluster_stats <- merge(cluster_mean_df, cluster_count_df) %>% arrange(cluster_mean)
-cluster_stats 
+engagement_level_stats <- merge(engagement_level_avg_df, engagement_level_count_df) %>% arrange(average_clicks)
+engagement_level_stats 
 ```
 
 
 
-#### Distribution of Probabilities in each cluster
+#### Distribution of Probabilities in each Engagement Level
 ```{r}
 # probabilities <- select(cluster_probabilitics, -cluster, -uncertainty, -id_student) %>%
 #   as.data.frame() %>%
@@ -219,16 +223,17 @@ cluster_stats
 ```
 
 
-## Cluster Analysis Tab
+## Engagement Level Analysis Tab
 ```{r}
-library(apexcharter)
+# Data Visualization
 library(highcharter)
 ```
 
 
 - Highcharter default colors: https://api.highcharts.com/highcharts/colors
 ```{r}
-hchart(cluster_stats, "column", hcaes(x = cluster, y = cluster_mean), dataLabels = list(enabled = TRUE),
+hchart(engagement_level_stats, "column", hcaes(x = engagement_level, y = average_clicks), 
+       dataLabels = list(enabled = TRUE),
        name = "Average No. of Clicks") %>% 
   hc_title(
     text = paste0("Average Number of Clicks for Each Engagement Level")
@@ -239,7 +244,8 @@ hchart(cluster_stats, "column", hcaes(x = cluster, y = cluster_mean), dataLabels
 
 
 ```{r}
-hchart(cluster_stats, "column", hcaes(x = cluster, y = Number_of_students), dataLabels = list(enabled = TRUE),
+hchart(engagement_level_stats, "column", hcaes(x = engagement_level, y = Number_of_students), 
+       dataLabels = list(enabled = TRUE),
        name = "No of Students") %>% 
   hc_title(
     text = paste0("Number of Students in Each Engagement Level")
@@ -251,41 +257,17 @@ hchart(cluster_stats, "column", hcaes(x = cluster, y = Number_of_students), data
 ```
 
 
-```{r}
-hchart(clicks_df$sum_click, color = "#B71C1C", name = "Clicks") %>% 
-  hc_title(
-    text = paste0("Distribution of Clicks")
-  ) %>% 
-  hc_xAxis(title = list(text = "Number of Students")) %>% 
-  hc_yAxis(title = list(text = "Number of Clicks"))
-```
-
-
 - Add min, max, average statistical summary of uncertainty
 - Add short caption explanation
 ```{r}
-hchart(clicks_df$uncertainty, color = "#B71C1C", name = "Uncertainty") %>% 
+hchart(engagement_level_probabilities$uncertainty, color = "#B71C1C", name = "Uncertainty") %>% 
   hc_title(
     text = paste0("Distribution of Engagement Level Assignment Uncertainty")
   ) %>% 
-  hc_xAxis(title = list(text = "Uncertainty")) %>% 
+  hc_xAxis(title = list(text = "Uncertainty"),
+           labels = list(format = "{value}%")) %>% 
   hc_yAxis(title = list(text = "Number of Students"))
 ```
-
-
-```{r}
-fig <- clicks_df %>%
-  plot_ly(
-    y = ~sum_click,
-    type = 'violin',
-    box = list(visible = T),meanline = list(visible = T), x0 = 'Clicks') 
-fig <- fig %>%
-  layout(
-    title = "Distribution of Clicks",
-    yaxis = list(title = "Number of Clicks", zeroline = F))
-fig
-```
-
 
 
 
@@ -340,23 +322,36 @@ hchart(clicks_df$sum_click, color = "#B71C1C", name = "Clicks") %>%
 
 
 ```{r}
-print(min(cluster_probabilitics$sum_click))
-print(max(cluster_probabilitics$sum_click))
-print(mean(cluster_probabilitics$sum_click))
-print(mean(cluster_probabilitics$uncertainty))
+print(min(engagement_level_probabilities$sum_click))
+print(max(engagement_level_probabilities$sum_click))
+print(round(mean(engagement_level_probabilities$sum_click),2))
+print(round(mean(engagement_level_probabilities$uncertainty),2))
 ```
 
 
 
 ```{r}
-
+DT::datatable(engagement_level_probabilities,
+              rownames = T,
+              filter = "top",
+              options = list(pageLength = 2, scrollX = TRUE, info = FALSE))
 ```
 
 
 ## Instructional Methods Tab
+### Virtual Learning Environment Data 
+The csv file contains information about the available materials in the VLE. Typically these are html pages, pdf files, etc. Students have access to these materials online and their interactions with the materials are recorded. The vle.csv file contains the following columns:
+
+_ **id_site** – an identification number of the material.
+- **code_module** – an identification code for module.
+- **code_presentation** - the identification code of presentation.
+- **activity_type** – the role associated with the module material.
+- **week_from** – the week from which the material is planned to be used.
+- **week_to** – week until which the material is planned to be used.
 ```{r}
-vle_df <- vle
-vle_df
+# vle_df <- vle
+# vle_df
+vle %>% head()
 ```
 
 
@@ -370,6 +365,7 @@ library(data.table)
 
 ```{r}
 # Merging the dataframes to link students with activities
+# Long execution code
 svle_vle_df <- data.table::merge.data.table(student_vle, vle, by = "id_site")
 svle_vle_df
 ```
@@ -377,6 +373,7 @@ svle_vle_df
 
 
 ```{r}
+# Long execution code
 # Number of Times student accessed an activity 
 activity_df <- svle_vle_df %>% 
   group_by(id_student,activity_type) %>% 
@@ -388,6 +385,7 @@ activity_df
 
 
 ```{r}
+# Merging data frames
 clicks_activity_df <- merge.data.table(activity_df, clicks_df, by = "id_student")
 clicks_activity_df
 ```
@@ -442,8 +440,8 @@ Activity Categories
 
 ```{r}
 activity_stats <- clicks_activity_df %>% 
-  filter(cluster %in% 1) %>%
-  group_by(cluster, activity_type) %>%
+  filter(engagement_level %in% 1) %>% # dashboard filter: single number select
+  group_by(engagement_level, activity_type) %>%
   summarise(activity_access_count = n()) %>% 
   mutate(activity_access_percent = round(activity_access_count / sum(activity_access_count) * 100, 2)) %>% 
   arrange(desc(activity_access_percent))
@@ -473,15 +471,15 @@ hchart(activity_stats, "column", hcaes(x = activity_type, y = activity_access_pe
 - description: Percentage of Students that Access each VLE Activity in Engagement Level
 ```{r}
 # Comparison between engagement levels 
-# Maximum number of comparison should be limited to 3 in dashboard
+# Maximum number of comparison should be limited to 3 in dashboard select
 activity_stats <- clicks_activity_df %>% 
-  filter(cluster %in% c(1,2, 3)) %>%
-  group_by(cluster, activity_type) %>%
+  filter(engagement_level %in% c(1,2, 3)) %>%
+  group_by(engagement_level, activity_type) %>%
   summarise(activity_access_count = n()) %>% 
   mutate(activity_access_percent = round(activity_access_count / sum(activity_access_count) * 100, 1)) %>% 
   arrange(desc(activity_access_percent))
 
-hchart(activity_stats, "column", hcaes(x = activity_type, y = activity_access_percent, group = cluster), 
+hchart(activity_stats, "column", hcaes(x = activity_type, y = activity_access_percent, group = engagement_level), 
        dataLabels = list(enabled = TRUE, format = "{y}"),
        stacking = "normal") %>% 
   hc_title(
@@ -497,39 +495,49 @@ hchart(activity_stats, "column", hcaes(x = activity_type, y = activity_access_pe
 
 
 
+
+
+
 ```{r}
 # Module Analysis
 # Number of Times student accessed a module on the VLE 
-module_df <- svle_vle_df %>% 
-  group_by(id_student,code_module.x) %>% 
-  summarise(module_acess_count = n()) %>% 
-  as.data.frame()
-module_df
+# module_df <- svle_vle_df %>% 
+#   group_by(id_student,code_module.x) %>% 
+#   summarise(module_acess_count = n()) %>% 
+#   as.data.frame()
+# module_df
+# clicks_module_df <- merge.data.table(module_df, clicks_df, by = "id_student")
+# clicks_module_df
+# module_stats <- clicks_module_df %>% 
+#   filter(engagement_level %in% c(1,2,3,4,5,6)) %>% # default: 4,5,6
+#   group_by(engagement_level, code_module.x) %>%
+#   summarise(module_access_count = n()) %>% 
+#   mutate(module_access_percent = round(module_access_count / sum(module_access_count) * 100, 1)) %>% 
+#   arrange(desc(module_access_percent))
+# module_stats
+```
+
+
+```{r}
+# Merging with student info data frame
+clicks_student_df <- merge.data.table(student, clicks_df, by = "id_student")
+clicks_student_df
+```
+
+```{r}
+module_stats <- clicks_student_df %>% 
+  filter(engagement_level %in% c(1:6)) %>% # default: all
+  group_by(engagement_level, code_module) %>%
+  summarise(number_of_students = n()) %>% 
+  mutate(percentage_of_students = round(number_of_students / sum(number_of_students) * 100, 1)) %>% 
+  arrange(desc(percentage_of_students))
+module_stats2
 ```
 
 
 
 ```{r}
-clicks_module_df <- merge.data.table(module_df, clicks_df, by = "id_student")
-clicks_module_df
-```
-
-
-
-```{r}
-module_stats <- clicks_module_df %>% 
-  filter(cluster %in% c(1,2,3,4,5,6)) %>% # default: 4,5,6
-  group_by(cluster, code_module.x) %>%
-  summarise(module_access_count = n()) %>% 
-  mutate(module_access_percent = round(module_access_count / sum(module_access_count) * 100, 1)) %>% 
-  arrange(desc(module_access_percent))
-module_stats
-```
-
-
-
-```{r}
-hchart(module_stats, "column", hcaes(x = code_module.x, y = module_access_percent, group = cluster), 
+hchart(module_stats, "column", hcaes(x = code_module, y = percentage_of_students, group = engagement_level), 
        dataLabels = list(enabled = TRUE, format = "{y}%")) %>% 
   hc_title(
     text = paste0("Modules Accessed by Engagement Level(s):")
@@ -552,17 +560,9 @@ clicks_df
 
 
 ```{r}
-# Merging with student info data frame
-clicks_student_df <- merge.data.table(student, clicks_df, by = "id_student")
-clicks_student_df
-```
-
-
-
-```{r}
 gender_stats <- clicks_student_df %>% 
-  filter(cluster %in% c(1:6)) %>% # default: all
-  group_by(cluster, gender) %>%
+  filter(engagement_level %in% c(1:6)) %>% # default: all
+  group_by(engagement_level, gender) %>%
   summarise(number_of_students = n()) %>% 
   mutate(percentage_of_students = round(number_of_students / sum(number_of_students) * 100, 1)) %>% 
   arrange(desc(percentage_of_students))
@@ -572,7 +572,7 @@ gender_stats
 
 
 ```{r}
-hchart(gender_stats, "column", hcaes(x = gender, y = percentage_of_students, group = cluster), 
+hchart(gender_stats, "column", hcaes(x = gender, y = percentage_of_students, group = engagement_level), 
        dataLabels = list(enabled = TRUE, format = "{y}%")) %>% 
   hc_title(
     text = paste0("Gender Representation in Engagement Level(s):")
@@ -589,8 +589,8 @@ hchart(gender_stats, "column", hcaes(x = gender, y = percentage_of_students, gro
 
 ```{r}
 age_stats <- clicks_student_df %>% 
-  filter(cluster %in% c(1:6)) %>% # default: all
-  group_by(cluster, age_band) %>%
+  filter(engagement_level %in% c(1:6)) %>% # default: all
+  group_by(engagement_level, age_band) %>%
   summarise(number_of_students = n()) %>% 
   mutate(percentage_of_students = round(number_of_students / sum(number_of_students) * 100, 1)) %>% 
   arrange(desc(percentage_of_students))
@@ -600,7 +600,7 @@ age_stats
 
 
 ```{r}
-hchart(age_stats, "column", hcaes(x = age_band, y = percentage_of_students, group = cluster), 
+hchart(age_stats, "column", hcaes(x = age_band, y = percentage_of_students, group = engagement_level), 
        dataLabels = list(enabled = TRUE, format = "{y}%")) %>% 
   hc_title(
     text = paste0("Student Age Band Representation in Engagement Level(s):")
@@ -617,8 +617,8 @@ hchart(age_stats, "column", hcaes(x = age_band, y = percentage_of_students, grou
 
 ```{r}
 disability_stats <- clicks_student_df %>% 
-  filter(cluster %in% c(1:6)) %>% # default: all
-  group_by(cluster, disability) %>%
+  filter(engagement_level %in% c(1:6)) %>% # default: all
+  group_by(engagement_level, disability) %>%
   summarise(number_of_students = n()) %>% 
   mutate(percentage_of_students = round(number_of_students / sum(number_of_students) * 100, 1)) %>% 
   arrange(desc(percentage_of_students))
@@ -629,7 +629,7 @@ disability_stats
 
 
 ```{r}
-hchart(disability_stats, "column", hcaes(x = disability, y = percentage_of_students, group = cluster), 
+hchart(disability_stats, "column", hcaes(x = disability, y = percentage_of_students, group = engagement_level), 
        dataLabels = list(enabled = TRUE, format = "{y}%")) %>% 
   hc_title(
     text = paste0("Student with/without a Disability Representation in Engagement Level(s):")
@@ -646,8 +646,8 @@ hchart(disability_stats, "column", hcaes(x = disability, y = percentage_of_stude
 
 ```{r}
 final_results_stats <- clicks_student_df %>% 
-  filter(cluster %in% c(1:6)) %>% # default: all
-  group_by(cluster, final_result) %>%
+  filter(engagement_level %in% c(1:6)) %>% # default: all
+  group_by(engagement_level, final_result) %>%
   summarise(number_of_students = n()) %>% 
   mutate(percentage_of_students = round(number_of_students / sum(number_of_students) * 100, 1)) %>% 
   arrange(desc(percentage_of_students))
@@ -657,7 +657,8 @@ final_results_stats
 
 
 ```{r}
-hchart(final_results_stats, "column", hcaes(x = final_result, y = percentage_of_students, group = cluster), 
+hchart(final_results_stats, "column", hcaes(x = final_result, 
+                                            y = percentage_of_students, group = engagement_level), 
        dataLabels = list(enabled = TRUE, format = "{y}%")) %>% 
   hc_title(
     text = paste0("Student Final Academic Outcome in each Engagement Level")
@@ -674,8 +675,8 @@ hchart(final_results_stats, "column", hcaes(x = final_result, y = percentage_of_
 
 ```{r}
 prev_attempts_stats <- clicks_student_df %>% 
-  filter(cluster %in% c(1:6)) %>% # default: all
-  group_by(cluster, num_of_prev_attempts) %>%
+  filter(engagement_level %in% c(1:6)) %>% # default: all
+  group_by(engagement_level, num_of_prev_attempts) %>%
   summarise(number_of_students = n()) %>% 
   mutate(percentage_of_students = round(number_of_students / sum(number_of_students) * 100, 1)) %>% 
   arrange(desc(percentage_of_students))
@@ -686,7 +687,8 @@ prev_attempts_stats
 
 
 ```{r}
-hchart(prev_attempts_stats, "column", hcaes(x = num_of_prev_attempts, y = percentage_of_students, group = cluster), 
+hchart(prev_attempts_stats, "column", hcaes(x = num_of_prev_attempts, 
+                                            y = percentage_of_students, group = engagement_level), 
        dataLabels = list(enabled = TRUE, format = "{y}%")) %>% 
   hc_title(
     text = paste0("Number of Previous Attempts in Course according to each Engagement Level")
@@ -703,8 +705,8 @@ hchart(prev_attempts_stats, "column", hcaes(x = num_of_prev_attempts, y = percen
 
 ```{r}
 region_stats <- clicks_student_df %>% 
-  filter(cluster %in% c(1:2)) %>% # default: all
-  group_by(cluster, region) %>%
+  filter(engagement_level %in% c(1:2)) %>% # default: all
+  group_by(engagement_level, region) %>%
   summarise(number_of_students = n()) %>% 
   mutate(percentage_of_students = round(number_of_students / sum(number_of_students) * 100, 1)) %>% 
   arrange(desc(percentage_of_students))
@@ -714,7 +716,7 @@ region_stats
 
 
 ```{r}
-hchart(region_stats, "column", hcaes(x = region, y = percentage_of_students, group = cluster), 
+hchart(region_stats, "column", hcaes(x = region, y = percentage_of_students, group = engagement_level), 
        dataLabels = list(enabled = TRUE, format = "{y}%")) %>% 
   hc_title(
     text = paste0("Engagement Level Representation based on Student's Region of Stay")
@@ -727,17 +729,6 @@ hchart(region_stats, "column", hcaes(x = region, y = percentage_of_students, gro
     enabled = TRUE)
 ```
 
-
-
-```{r}
-
-```
-
-
-
-```{r}
-
-```
 
 
 
