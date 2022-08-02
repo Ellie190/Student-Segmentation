@@ -41,6 +41,7 @@ library(plotly)
 # Load student VLE data 
 svle_df <- student_vle
 svle_df %>% head()
+student_vle %>% head()
 ```
 
 
@@ -167,6 +168,7 @@ cluster_probabilitics %>% head()
 # Add cluster belonging of student
 cluster_probabilitics$cluster <- clicks_df$cluster
 cluster_probabilitics$uncertainty <- gmm_model$uncertainty
+cluster_probabilitics$sum_click <- clicks_df$sum_click
 cluster_probabilitics$id_student <- clicks_df$id_student
 cluster_probabilitics %>% head()
 ```
@@ -260,6 +262,7 @@ hchart(clicks_df$sum_click, color = "#B71C1C", name = "Clicks") %>%
 
 
 - Add min, max, average statistical summary of uncertainty
+- Add short caption explanation
 ```{r}
 hchart(clicks_df$uncertainty, color = "#B71C1C", name = "Uncertainty") %>% 
   hc_title(
@@ -281,6 +284,72 @@ fig <- fig %>%
     title = "Distribution of Clicks",
     yaxis = list(title = "Number of Clicks", zeroline = F))
 fig
+```
+
+
+
+
+```{r}
+# Boxplot of clicks 
+bp_clicks <- data_to_boxplot(data = clicks_df, 
+                             variable = sum_click,
+                             add_outliers = FALSE,
+                             fillColor = "#B71C1C",
+                             color = "black")
+highchart() %>%
+  hc_xAxis(type = "category",
+           title = list(text = "Clicks")) %>%
+  hc_yAxis(title = list(text = "Number of Clicks")) %>% 
+  hc_title(
+    text = paste0("Statistical Summary of Clickstream Data without Outliers")
+  ) %>% 
+  hc_add_series_list(bp_clicks) %>% 
+  hc_legend(FALSE)
+```
+
+
+
+```{r}
+# Boxplot of clicks 
+bp_clicks_outlier <- data_to_boxplot(data = clicks_df, 
+                             variable = sum_click,
+                             add_outliers = TRUE,
+                             fillColor = "#B71C1C",
+                             color = "black")
+highchart() %>%
+  hc_xAxis(type = "category",
+           title = list(text = "Clicks")) %>%
+  hc_yAxis(title = list(text = "Sum of Clicks")) %>% 
+  hc_title(
+    text = paste0("Statistical Summary of Clickstream Data with Outliers")
+  ) %>% 
+  hc_add_series_list(bp_clicks_outlier) %>% 
+  hc_legend(FALSE)
+```
+
+
+```{r}
+hchart(clicks_df$sum_click, color = "#B71C1C", name = "Clicks") %>% 
+  hc_title(
+    text = paste0("Distribution of Clickstream Data")
+  ) %>% 
+  hc_xAxis(title = list(text = "Number of Clicks")) %>% 
+  hc_yAxis(title = list(text = "Number of Students"))
+```
+
+
+
+```{r}
+print(min(cluster_probabilitics$sum_click))
+print(max(cluster_probabilitics$sum_click))
+print(mean(cluster_probabilitics$sum_click))
+print(mean(cluster_probabilitics$uncertainty))
+```
+
+
+
+```{r}
+
 ```
 
 
@@ -329,44 +398,44 @@ Activity Categories
 - Assessment - quiz, questionnaire, external quiz
 - VLE Site/App - dualpane, repeatactivity, htmlactivity, sharedsubpage, ouelluminate, dataplus, page, homepage, forumng, subpage, oucollaborate 
 ```{r}
-clicks_activity_df <- clicks_activity_df %>%
-  mutate(vle_activity = case_when(grepl("resource", activity_type) ~ "Resource",
-                       grepl("oucontent", activity_type) ~ "Resource",
-                       grepl("url", activity_type) ~ "Resource",
-                       grepl("ouwiki", activity_type) ~ "Resource",
-                       grepl("glossary", activity_type) ~ "Resource",
-                       grepl("folder", activity_type) ~ "Resource",
-                       grepl("quiz", activity_type) ~ "Assessment",
-                       grepl("questionnaire", activity_type) ~ "Assessment",
-                       grepl("externalquiz", activity_type) ~ "Assessment",
-                       grepl("subpage", activity_type) ~ "VLE Site/App",
-                       grepl("forumng", activity_type) ~ "VLE Site/App",
-                       grepl("page", activity_type) ~ "VLE Site/App",
-                       grepl("oucollaborate", activity_type) ~ "VLE Site/App",
-                       grepl("dataplus", activity_type) ~ "VLE Site/App",
-                       grepl("homepage", activity_type) ~ "VLE Site/App",
-                       grepl("ouelluminate", activity_type) ~ "VLE Site/App",
-                       grepl("dualpane", activity_type) ~ "VLE Site/App",
-                       grepl("repeatactivity", activity_type) ~ "VLE Site/App",
-                       grepl("htmlactivity", activity_type) ~ "VLE Site/App",
-                       grepl("sharedsubpage", activity_type) ~ "VLE Site/App")) 
-clicks_activity_df
+# clicks_activity_df <- clicks_activity_df %>%
+#   mutate(vle_activity = case_when(grepl("resource", activity_type) ~ "Resource",
+#                        grepl("oucontent", activity_type) ~ "Resource",
+#                        grepl("url", activity_type) ~ "Resource",
+#                        grepl("ouwiki", activity_type) ~ "Resource",
+#                        grepl("glossary", activity_type) ~ "Resource",
+#                        grepl("folder", activity_type) ~ "Resource",
+#                        grepl("quiz", activity_type) ~ "Assessment",
+#                        grepl("questionnaire", activity_type) ~ "Assessment",
+#                        grepl("externalquiz", activity_type) ~ "Assessment",
+#                        grepl("subpage", activity_type) ~ "VLE Site/App",
+#                        grepl("forumng", activity_type) ~ "VLE Site/App",
+#                        grepl("page", activity_type) ~ "VLE Site/App",
+#                        grepl("oucollaborate", activity_type) ~ "VLE Site/App",
+#                        grepl("dataplus", activity_type) ~ "VLE Site/App",
+#                        grepl("homepage", activity_type) ~ "VLE Site/App",
+#                        grepl("ouelluminate", activity_type) ~ "VLE Site/App",
+#                        grepl("dualpane", activity_type) ~ "VLE Site/App",
+#                        grepl("repeatactivity", activity_type) ~ "VLE Site/App",
+#                        grepl("htmlactivity", activity_type) ~ "VLE Site/App",
+#                        grepl("sharedsubpage", activity_type) ~ "VLE Site/App")) 
+# clicks_activity_df
 ```
 
 
 
 ```{r}
 # Number of occurrences for each activity 
-table(clicks_activity_df$vle_activity)
+# table(clicks_activity_df$vle_activity)
 ```
 
 
 
 ```{r}
 # Occurrences of activity types per cluster
-clicks_activity_df %>% 
-  group_by(cluster, vle_activity) %>%
-  summarise(activity_access_count = n())
+# clicks_activity_df %>% 
+#   group_by(cluster, vle_activity) %>%
+#   summarise(activity_access_count = n())
 ```
 
 
@@ -391,7 +460,8 @@ hchart(activity_stats, "column", hcaes(x = activity_type, y = activity_access_pe
     text = paste0("Percentage of Students that Access each VLE Activity in Engagement Level ", 1)
   ) %>% 
   hc_xAxis(title = list(text = "VLE Activity")) %>% 
-  hc_yAxis(title = list(text = "Percentage (%) of Students")) %>% 
+  hc_yAxis(title = list(text = "Percentage of Students"),
+           labels = list(format = "{value}%")) %>% 
   hc_exporting(
     enabled = TRUE)
 ```
@@ -399,6 +469,8 @@ hchart(activity_stats, "column", hcaes(x = activity_type, y = activity_access_pe
 
 - source: https://www.datanovia.com/en/lessons/highchart-interactive-bar-plot-in-r/
 - Color options are included
+- New Title: VLE Activities Accessed by Engagement Level(s)
+- description: Percentage of Students that Access each VLE Activity in Engagement Level
 ```{r}
 # Comparison between engagement levels 
 # Maximum number of comparison should be limited to 3 in dashboard
@@ -416,7 +488,99 @@ hchart(activity_stats, "column", hcaes(x = activity_type, y = activity_access_pe
     text = paste0("Percentage of Students that Access each VLE Activity in Engagement Level")
   ) %>% 
   hc_xAxis(title = list(text = "VLE Activity")) %>% 
-  hc_yAxis(title = list(text = "Percentage (%) of Students")) %>% 
+  hc_yAxis(title = list(text = "Percentage of Students"),
+           labels = list(format = "{value}%")) %>% 
+  hc_legend(title = list(text = "Engagement Level")) %>% 
+  hc_exporting(
+    enabled = TRUE) 
+```
+
+
+
+```{r}
+# Module Analysis
+# Number of Times student accessed a module on the VLE 
+module_df <- svle_vle_df %>% 
+  group_by(id_student,code_module.x) %>% 
+  summarise(module_acess_count = n()) %>% 
+  as.data.frame()
+module_df
+```
+
+
+
+```{r}
+clicks_module_df <- merge.data.table(module_df, clicks_df, by = "id_student")
+clicks_module_df
+```
+
+
+
+```{r}
+module_stats <- clicks_module_df %>% 
+  filter(cluster %in% c(1,2,3,4,5,6)) %>% # default: 4,5,6
+  group_by(cluster, code_module.x) %>%
+  summarise(module_access_count = n()) %>% 
+  mutate(module_access_percent = round(module_access_count / sum(module_access_count) * 100, 1)) %>% 
+  arrange(desc(module_access_percent))
+module_stats
+```
+
+
+
+```{r}
+hchart(module_stats, "column", hcaes(x = code_module.x, y = module_access_percent, group = cluster), 
+       dataLabels = list(enabled = TRUE, format = "{y}%")) %>% 
+  hc_title(
+    text = paste0("Modules Accessed by Engagement Level(s):")
+  ) %>% 
+  hc_xAxis(title = list(text = "Module")) %>% 
+  hc_yAxis(title = list(text = "Percentage of Students"), 
+           labels = list(format = "{value}%")) %>% 
+  hc_legend(title = list(text = "Engagement Level")) %>% 
+  hc_exporting(
+    enabled = TRUE)
+```
+
+
+
+## Student Characteristic Tab
+```{r}
+clicks_df
+```
+
+
+
+```{r}
+# Merging with student info data frame
+clicks_student_df <- merge.data.table(student, clicks_df, by = "id_student")
+clicks_student_df
+```
+
+
+
+```{r}
+gender_stats <- clicks_student_df %>% 
+  filter(cluster %in% c(1:6)) %>% # default: all
+  group_by(cluster, gender) %>%
+  summarise(number_of_students = n()) %>% 
+  mutate(percentage_of_students = round(number_of_students / sum(number_of_students) * 100, 1)) %>% 
+  arrange(desc(percentage_of_students))
+gender_stats
+```
+
+
+
+```{r}
+hchart(gender_stats, "column", hcaes(x = gender, y = percentage_of_students, group = cluster), 
+       dataLabels = list(enabled = TRUE, format = "{y}%")) %>% 
+  hc_title(
+    text = paste0("Gender Representation in Engagement Level(s):")
+  ) %>% 
+  hc_xAxis(title = list(text = "Gender")) %>% 
+  hc_yAxis(title = list(text = "Percentage of Students"), 
+           labels = list(format = "{value}%")) %>% 
+  hc_legend(title = list(text = "Engagement Level")) %>% 
   hc_exporting(
     enabled = TRUE)
 ```
@@ -424,115 +588,143 @@ hchart(activity_stats, "column", hcaes(x = activity_type, y = activity_access_pe
 
 
 ```{r}
-
+age_stats <- clicks_student_df %>% 
+  filter(cluster %in% c(1:6)) %>% # default: all
+  group_by(cluster, age_band) %>%
+  summarise(number_of_students = n()) %>% 
+  mutate(percentage_of_students = round(number_of_students / sum(number_of_students) * 100, 1)) %>% 
+  arrange(desc(percentage_of_students))
+age_stats
 ```
 
 
 
 ```{r}
-
+hchart(age_stats, "column", hcaes(x = age_band, y = percentage_of_students, group = cluster), 
+       dataLabels = list(enabled = TRUE, format = "{y}%")) %>% 
+  hc_title(
+    text = paste0("Student Age Band Representation in Engagement Level(s):")
+  ) %>% 
+  hc_xAxis(title = list(text = "Age Band")) %>% 
+  hc_yAxis(title = list(text = "Percentage of Students"), 
+           labels = list(format = "{value}%")) %>% 
+  hc_legend(title = list(text = "Engagement Level")) %>% 
+  hc_exporting(
+    enabled = TRUE)
 ```
 
 
 
 ```{r}
-
+disability_stats <- clicks_student_df %>% 
+  filter(cluster %in% c(1:6)) %>% # default: all
+  group_by(cluster, disability) %>%
+  summarise(number_of_students = n()) %>% 
+  mutate(percentage_of_students = round(number_of_students / sum(number_of_students) * 100, 1)) %>% 
+  arrange(desc(percentage_of_students))
+disability_stats$disability <- as.character(disability_stats$disability)
+disability_stats
 ```
 
 
 
 ```{r}
-
+hchart(disability_stats, "column", hcaes(x = disability, y = percentage_of_students, group = cluster), 
+       dataLabels = list(enabled = TRUE, format = "{y}%")) %>% 
+  hc_title(
+    text = paste0("Student with/without a Disability Representation in Engagement Level(s):")
+  ) %>% 
+  hc_xAxis(title = list(text = "Disability")) %>% 
+  hc_yAxis(title = list(text = "Percentage of Students"), 
+           labels = list(format = "{value}%")) %>% 
+  hc_legend(title = list(text = "Engagement Level")) %>% 
+  hc_exporting(
+    enabled = TRUE)
 ```
 
 
 
 ```{r}
-
+final_results_stats <- clicks_student_df %>% 
+  filter(cluster %in% c(1:6)) %>% # default: all
+  group_by(cluster, final_result) %>%
+  summarise(number_of_students = n()) %>% 
+  mutate(percentage_of_students = round(number_of_students / sum(number_of_students) * 100, 1)) %>% 
+  arrange(desc(percentage_of_students))
+final_results_stats
 ```
 
 
 
 ```{r}
-
+hchart(final_results_stats, "column", hcaes(x = final_result, y = percentage_of_students, group = cluster), 
+       dataLabels = list(enabled = TRUE, format = "{y}%")) %>% 
+  hc_title(
+    text = paste0("Student Final Academic Outcome in each Engagement Level")
+  ) %>% 
+  hc_xAxis(title = list(text = "Final Result")) %>% 
+  hc_yAxis(title = list(text = "Percentage of Students"), 
+           labels = list(format = "{value}%")) %>% 
+  hc_legend(title = list(text = "Engagement Level")) %>% 
+  hc_exporting(
+    enabled = TRUE)
 ```
 
 
 
 ```{r}
-
+prev_attempts_stats <- clicks_student_df %>% 
+  filter(cluster %in% c(1:6)) %>% # default: all
+  group_by(cluster, num_of_prev_attempts) %>%
+  summarise(number_of_students = n()) %>% 
+  mutate(percentage_of_students = round(number_of_students / sum(number_of_students) * 100, 1)) %>% 
+  arrange(desc(percentage_of_students))
+prev_attempts_stats$num_of_prev_attempts <- as.character(prev_attempts_stats$num_of_prev_attempts)
+prev_attempts_stats
 ```
 
 
 
 ```{r}
-
+hchart(prev_attempts_stats, "column", hcaes(x = num_of_prev_attempts, y = percentage_of_students, group = cluster), 
+       dataLabels = list(enabled = TRUE, format = "{y}%")) %>% 
+  hc_title(
+    text = paste0("Number of Previous Attempts in Course according to each Engagement Level")
+  ) %>% 
+  hc_xAxis(title = list(text = "Number of Previous Attempts")) %>% 
+  hc_yAxis(title = list(text = "Percentage of Students"), 
+           labels = list(format = "{value}%")) %>% 
+  hc_legend(title = list(text = "Engagement Level")) %>% 
+  hc_exporting(
+    enabled = TRUE)
 ```
 
 
 
 ```{r}
-
+region_stats <- clicks_student_df %>% 
+  filter(cluster %in% c(1:2)) %>% # default: all
+  group_by(cluster, region) %>%
+  summarise(number_of_students = n()) %>% 
+  mutate(percentage_of_students = round(number_of_students / sum(number_of_students) * 100, 1)) %>% 
+  arrange(desc(percentage_of_students))
+region_stats
 ```
 
 
 
 ```{r}
-
-```
-
-
-
-```{r}
-
-```
-
-
-
-```{r}
-
-```
-
-
-
-```{r}
-
-```
-
-
-
-```{r}
-
-```
-
-
-
-```{r}
-
-```
-
-
-
-```{r}
-
-```
-
-
-
-```{r}
-
-```
-
-
-
-```{r}
-
-```
-
-
-
-```{r}
-
+hchart(region_stats, "column", hcaes(x = region, y = percentage_of_students, group = cluster), 
+       dataLabels = list(enabled = TRUE, format = "{y}%")) %>% 
+  hc_title(
+    text = paste0("Engagement Level Representation based on Student's Region of Stay")
+  ) %>% 
+  hc_xAxis(title = list(text = "Regions")) %>% 
+  hc_yAxis(title = list(text = "Percentage of Students"), 
+           labels = list(format = "{value}%")) %>% 
+  hc_legend(title = list(text = "Engagement Level")) %>% 
+  hc_exporting(
+    enabled = TRUE)
 ```
 
 
