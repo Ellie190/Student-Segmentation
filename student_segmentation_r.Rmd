@@ -224,7 +224,7 @@ library(highcharter)
 ```
 
 
-
+- Highcharter default colors: https://api.highcharts.com/highcharts/colors
 ```{r}
 hchart(cluster_stats, "column", hcaes(x = cluster, y = cluster_mean), dataLabels = list(enabled = TRUE),
        name = "Average No. of Clicks") %>% 
