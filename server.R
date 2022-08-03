@@ -5,6 +5,7 @@ server <- function(input, output, session) {
   # Exclude scientific outputs 
   options(scipen=999)
   
+  # GMM DATA ANALYSIS ----
   svle_df <- reactive({
     student_vle
   })
@@ -18,7 +19,7 @@ server <- function(input, output, session) {
   })
   
   output$date_period_query <- renderUI({
-    sliderInput("sel_date_period", label = "Select the Number of days since start/end of year/semester",
+    sliderInput("sel_date_period", label = "Select the Number of days since start-end of year & semester",
                 min = min(svle_df()$date), 
                 max =  max(svle_df()$date), 
                 step = 1,
@@ -90,7 +91,7 @@ server <- function(input, output, session) {
   })
   
   output$fig1 <- renderHighchart({
-    hchart(engagement_level_probabilities()$uncertainty, color = "#B71C1C", name = "Uncertainty") %>% 
+    hchart(engagement_level_probabilities()$uncertainty, color = "#B71C1C", name = "GMM Uncertainty") %>% 
       hc_title(
         text = paste0("Distribution of Engagement Level Assignment Uncertainty")
       ) %>% 
@@ -147,7 +148,7 @@ server <- function(input, output, session) {
   # Mean Number of clicks
   mean_clicks <- reactive({
     mean_df <- engagement_level_probabilities() %>%
-      summarise(mean = f1(round(mean(sum_click),2)))
+      summarise(mean = f1(round(mean(sum_click),0)))
     mean_df$mean
   })
   
@@ -166,9 +167,9 @@ server <- function(input, output, session) {
   output$min_c <- renderValueBox({
     valueBox(
       value = min_clicks(),
-      subtitle = "Min No. of Clicks",
-      color = "warning",
-      icon = icon("coins"),
+      subtitle = "Minimum No. of Clicks",
+      color = "danger",
+      icon = icon("computer-mouse"),
       gradient = TRUE
       
     )
@@ -177,9 +178,9 @@ server <- function(input, output, session) {
   output$max_c <- renderValueBox({
     valueBox(
       value = max_clicks(),
-      subtitle = "Max No. of Clicks",
-      color = "warning",
-      icon = icon("coins"),
+      subtitle = "Maximum No. of Clicks",
+      color = "danger",
+      icon = icon("computer-mouse"),
       gradient = TRUE
       
     )
@@ -188,9 +189,9 @@ server <- function(input, output, session) {
   output$mean_c <- renderValueBox({
     valueBox(
       value = mean_clicks(),
-      subtitle = "Avg No. of Clicks",
-      color = "warning",
-      icon = icon("coins"),
+      subtitle = "Average No. of Clicks",
+      color = "danger",
+      icon = icon("computer-mouse"),
       gradient = TRUE
       
     )
@@ -198,10 +199,10 @@ server <- function(input, output, session) {
   
   output$mean_u <- renderValueBox({
     valueBox(
-      value = mean_uncertainty(),
-      subtitle = "Avg Uncertainty %",
-      color = "warning",
-      icon = icon("coins"),
+      value = paste0(mean_uncertainty(), "%"),
+      subtitle = "Average GMM Uncertainty",
+      color = "danger",
+      icon = icon("laptop-code"),
       gradient = TRUE
       
     )
@@ -218,7 +219,264 @@ server <- function(input, output, session) {
                                    "}")))
   })
   
-
+ # INSTRUCTIONAL METHODS ----
+  
+  # Merging the dataframes to link students with activities
+  # Long execution code
+  
+  output$activity_el_query <- renderUI({
+    selectizeInput('activity_el_sel',
+                   label = "Select Engagement Level(s) to Visual/Compare",
+                   choices = 1:6,
+                   selected = 1:3,
+                   multiple = TRUE,
+                   options = list(maxItems = 3))
+  })
+  
+  svle_vle_df <- reactive({
+    svle_vle_df <- data.table::merge.data.table(student_vle, vle, by = "id_site")
+    svle_vle_df
+  })
+    
+  # Long execution code
+  # Number of Times student accessed an activity 
+  activity_df <- reactive({
+    activity_df <- svle_vle_df() %>% 
+      group_by(id_student,activity_type) %>% 
+      summarise(activity_access_count = n()) %>% 
+      as.data.frame()
+    activity_df
+  })
+    
+    
+  clicks_activity_df <- reactive({
+    # Merging data frames
+    clicks_activity_df <- merge.data.table(activity_df(), clicks_df2(), by = "id_student")
+    clicks_activity_df
+  })
+    
+    activity_stats <- reactive({
+      activity_stats <- clicks_activity_df() %>% 
+        filter(engagement_level %in% input$activity_el_sel) %>% 
+        group_by(engagement_level, activity_type) %>%
+        summarise(activity_access_count = n()) %>% 
+        mutate(activity_access_percent = round(activity_access_count / sum(activity_access_count) * 100, 1)) %>% 
+        arrange(desc(activity_access_percent))
+      activity_stats
+    })
+    
+  
+  output$fig4 <- renderHighchart({
+    hchart(activity_stats(), "column", hcaes(x = activity_type, y = activity_access_percent, group = engagement_level), 
+           dataLabels = list(enabled = TRUE, format = "{y}"),
+           stacking = "normal") %>% 
+      hc_title(
+        text = paste0("Percentage of Students that Access each VLE Activity in Engagement Level")
+      ) %>% 
+      hc_xAxis(title = list(text = "VLE Activity")) %>% 
+      hc_yAxis(title = list(text = "Percentage of Students"),
+               labels = list(format = "{value}%")) %>% 
+      hc_legend(title = list(text = "Engagement Level")) %>% 
+      hc_exporting(
+        enabled = TRUE) 
+  })
+  
+  # Merging with student info data frame
+  clicks_student_df <- reactive({
+    clicks_student_df <- merge.data.table(student, clicks_df2(), by = "id_student")
+    clicks_student_df
+  })
+  
+  module_stats <- reactive({
+    module_stats <- clicks_student_df() %>% 
+      filter(engagement_level %in% c(1:6)) %>% # default: all
+      group_by(engagement_level, code_module) %>%
+      summarise(number_of_students = n()) %>% 
+      mutate(percentage_of_students = round(number_of_students / sum(number_of_students) * 100, 1)) %>% 
+      arrange(desc(percentage_of_students))
+    module_stats
+  })
+  
+  output$fig5 <- renderHighchart({
+    hchart(module_stats(), "column", hcaes(x = code_module, y = percentage_of_students, group = engagement_level), 
+           dataLabels = list(enabled = TRUE, format = "{y}%")) %>% 
+      hc_title(
+        text = paste0("Modules Accessed by Engagement Level(s):")
+      ) %>% 
+      hc_xAxis(title = list(text = "Module")) %>% 
+      hc_yAxis(title = list(text = "Percentage of Students"), 
+               labels = list(format = "{value}%")) %>% 
+      hc_legend(title = list(text = "Engagement Level")) %>% 
+      hc_exporting(
+        enabled = TRUE)
+  })
+  
+  # STUDENT CHARACTERISTICS ----
+  
+  gender_stats <- reactive({
+    gender_stats <- clicks_student_df() %>% 
+      filter(engagement_level %in% c(1:6)) %>% # default: all
+      group_by(engagement_level, gender) %>%
+      summarise(number_of_students = n()) %>% 
+      mutate(percentage_of_students = round(number_of_students / sum(number_of_students) * 100, 1)) %>% 
+      arrange(desc(percentage_of_students))
+    gender_stats
+  })
+  
+  output$fig6 <- renderHighchart({
+    hchart(gender_stats(), "column", hcaes(x = gender, y = percentage_of_students, group = engagement_level), 
+           dataLabels = list(enabled = TRUE, format = "{y}%")) %>% 
+      hc_title(
+        text = paste0("Gender Representation in Engagement Level(s):")
+      ) %>% 
+      hc_xAxis(title = list(text = "Gender")) %>% 
+      hc_yAxis(title = list(text = "Percentage of Students"), 
+               labels = list(format = "{value}%")) %>% 
+      hc_legend(title = list(text = "Engagement Level")) %>% 
+      hc_exporting(
+        enabled = TRUE)
+  })
+  
+  age_stats <- reactive({
+    age_stats <- clicks_student_df() %>% 
+      filter(engagement_level %in% c(1:6)) %>% # default: all
+      group_by(engagement_level, age_band) %>%
+      summarise(number_of_students = n()) %>% 
+      mutate(percentage_of_students = round(number_of_students / sum(number_of_students) * 100, 1)) %>% 
+      arrange(desc(percentage_of_students))
+    age_stats
+  })
+  
+  output$fig7 <- renderHighchart({
+    hchart(age_stats(), "column", hcaes(x = age_band, y = percentage_of_students, group = engagement_level), 
+           dataLabels = list(enabled = TRUE, format = "{y}%")) %>% 
+      hc_title(
+        text = paste0("Student Age Band Representation in Engagement Level(s):")
+      ) %>% 
+      hc_xAxis(title = list(text = "Age Band")) %>% 
+      hc_yAxis(title = list(text = "Percentage of Students"), 
+               labels = list(format = "{value}%")) %>% 
+      hc_legend(title = list(text = "Engagement Level")) %>% 
+      hc_exporting(
+        enabled = TRUE)
+  })
+  
+  disability_stats <- reactive({
+    disability_stats <- clicks_student_df() %>% 
+      filter(engagement_level %in% c(1:6)) %>% # default: all
+      group_by(engagement_level, disability) %>%
+      summarise(number_of_students = n()) %>% 
+      mutate(percentage_of_students = round(number_of_students / sum(number_of_students) * 100, 1)) %>% 
+      arrange(desc(percentage_of_students))
+    disability_stats$disability <- as.character(disability_stats$disability)
+    disability_stats
+  })
+  
+  output$fig8 <- renderHighchart({
+    hchart(disability_stats(), "column", hcaes(x = disability, y = percentage_of_students, group = engagement_level), 
+           dataLabels = list(enabled = TRUE, format = "{y}%")) %>% 
+      hc_title(
+        text = paste0("Student with/without a Disability Representation in Engagement Level(s):")
+      ) %>% 
+      hc_xAxis(title = list(text = "Disability")) %>% 
+      hc_yAxis(title = list(text = "Percentage of Students"), 
+               labels = list(format = "{value}%")) %>% 
+      hc_legend(title = list(text = "Engagement Level")) %>% 
+      hc_exporting(
+        enabled = TRUE)
+  })
+  
+  prev_attempts_stats <- reactive({
+    prev_attempts_stats <- clicks_student_df() %>% 
+      filter(engagement_level %in% c(1:6)) %>% # default: all
+      group_by(engagement_level, num_of_prev_attempts) %>%
+      summarise(number_of_students = n()) %>% 
+      mutate(percentage_of_students = round(number_of_students / sum(number_of_students) * 100, 1)) %>% 
+      arrange(desc(percentage_of_students))
+    prev_attempts_stats$num_of_prev_attempts <- as.character(prev_attempts_stats$num_of_prev_attempts)
+    prev_attempts_stats
+  })
+  
+  output$fig9 <- renderHighchart({
+    hchart(prev_attempts_stats(), "column", hcaes(x = num_of_prev_attempts, 
+                                                y = percentage_of_students, group = engagement_level), 
+           dataLabels = list(enabled = TRUE, format = "{y}%")) %>% 
+      hc_title(
+        text = paste0("Number of Previous Attempts in Course according to each Engagement Level")
+      ) %>% 
+      hc_xAxis(title = list(text = "Number of Previous Attempts")) %>% 
+      hc_yAxis(title = list(text = "Percentage of Students"), 
+               labels = list(format = "{value}%")) %>% 
+      hc_legend(title = list(text = "Engagement Level")) %>% 
+      hc_exporting(
+        enabled = TRUE)
+  })
+  
+  final_results_stats <- reactive({
+    final_results_stats <- clicks_student_df() %>% 
+      filter(engagement_level %in% c(1:6)) %>% # default: all
+      group_by(engagement_level, final_result) %>%
+      summarise(number_of_students = n()) %>% 
+      mutate(percentage_of_students = round(number_of_students / sum(number_of_students) * 100, 1)) %>% 
+      arrange(desc(percentage_of_students))
+    final_results_stats
+  })
+  
+  output$fig10 <- renderHighchart({
+    hchart(final_results_stats(), "column", hcaes(x = final_result, 
+                                                y = percentage_of_students, group = engagement_level), 
+           dataLabels = list(enabled = TRUE, format = "{y}%")) %>% 
+      hc_title(
+        text = paste0("Student Final Academic Outcome in each Engagement Level")
+      ) %>% 
+      hc_xAxis(title = list(text = "Final Result")) %>% 
+      hc_yAxis(title = list(text = "Percentage of Students"), 
+               labels = list(format = "{value}%")) %>% 
+      hc_legend(title = list(text = "Engagement Level")) %>% 
+      hc_exporting(
+        enabled = TRUE)
+  })
+  
+  output$region_el_query <- renderUI({
+    selectizeInput('region_el_sel',
+                   label = "Select Engagement Level(s) to Visual/Compare",
+                   choices = 1:6,
+                   selected = 1:3,
+                   multiple = TRUE,
+                   options = list(maxItems = 3))
+  })
+  
+  region_stats <- reactive({
+    region_stats <- clicks_student_df() %>% 
+      filter(engagement_level %in% input$region_el_sel) %>% # default: all
+      group_by(engagement_level, region) %>%
+      summarise(number_of_students = n()) %>% 
+      mutate(percentage_of_students = round(number_of_students / sum(number_of_students) * 100, 1)) %>% 
+      arrange(desc(percentage_of_students))
+    region_stats
+  })
+  
+  output$fig11 <- renderHighchart({
+    hchart(region_stats(), "column", hcaes(x = region, y = percentage_of_students, group = engagement_level), 
+           dataLabels = list(enabled = TRUE, format = "{y}%")) %>% 
+      hc_title(
+        text = paste0("Engagement Level Representation based on Student's Region of Stay")
+      ) %>% 
+      hc_xAxis(title = list(text = "Regions")) %>% 
+      hc_yAxis(title = list(text = "Percentage of Students"), 
+               labels = list(format = "{value}%")) %>% 
+      hc_legend(title = list(text = "Engagement Level")) %>% 
+      hc_exporting(
+        enabled = TRUE)
+  })
+  
+  
+  
+  
+  
+  
+  
+  
   
 
 }
