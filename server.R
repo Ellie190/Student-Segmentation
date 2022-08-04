@@ -10,6 +10,31 @@ server <- function(input, output, session) {
     student_vle
   })
   
+  observeEvent(input$show, {
+    showModal(modalDialog(
+      size = "l",
+      title = "EDM Dashboard Information",
+      p(strong("GMM Data Analysis Tab: "), "This section of the dashboard is for performing clustering (grouping) through
+      the use of a Gaussian Mixture Model (GMM). The GMM Cluster model groups students with similar 
+        clicking behaviors into engagement levels (ranging from 1 to n-levels). 
+        In the context of the analysis, lower levels are an indication of low engagement
+        and higher levels are an indication of high engagement.", br(), br(),
+        strong("Instructional Methods Tab: "), "In this section, charts are displayed to illustrate the 
+        Activities & Modules students in each engagement level access the most or least in the 
+        Virtual Learning Environment (VLE).", br(), br(),
+        strong("Student Characteristics Tab: "), "In this section, charts are displayed to show -",
+        tags$ul(
+          tags$li(strong("e.g. 1: "), "what percentage of students in each engagement level are males/females 
+                  (gender representation)"),
+          tags$li(strong("e.g. 2: "), "the percentage of students in each engagement level that are withdrawing, failing,
+               passing a course/module (final academic outcome representation)"),
+          tags$li(strong("Note: "), "The same is done for student age, student disability status, 
+                  student's region of stay and the number of previous attempts a student has had in a 
+                  course or module")
+        )
+        )))
+  })
+  
   output$year_sem_query <- renderUI({
     selectInput('sel_year_sem',
                 label = "Select Academic Year & Semester",
@@ -26,10 +51,18 @@ server <- function(input, output, session) {
                 value = c(min(svle_df()$date), max(svle_df()$date)))
   })
   
-  clicks_df <- reactive({
+  clicks_df <- eventReactive(input$submit, ignoreNULL = FALSE,{
     req(input$sel_date_period[1])
     req(input$sel_date_period[2])
     req(input$sel_year_sem)
+    id <- showNotification(
+      "generating analysis...", 
+      duration = NULL, 
+      closeButton = FALSE,
+      type = "message"
+    )
+    on.exit(removeNotification(id), add = TRUE)
+    
     svle_df() %>% 
       filter(date >= input$sel_date_period[1] & date <= input$sel_date_period[2] &
                code_presentation %in% input$sel_year_sem) %>%
@@ -41,7 +74,7 @@ server <- function(input, output, session) {
     select(clicks_df(), sum_click)
   })
   
-  gmm_model <- reactive({
+  gmm_model <- eventReactive(input$submit, ignoreNULL = FALSE,{
     req(input$gmm_el)
     gmm_model <- Mclust(gmm_df(), G=input$gmm_el, verbose = FALSE)
     gmm_model
@@ -169,7 +202,7 @@ server <- function(input, output, session) {
       value = min_clicks(),
       subtitle = "Minimum No. of Clicks",
       color = "danger",
-      icon = icon("computer-mouse"),
+      icon = icon("arrow-pointer"),
       gradient = TRUE
       
     )
@@ -180,7 +213,7 @@ server <- function(input, output, session) {
       value = max_clicks(),
       subtitle = "Maximum No. of Clicks",
       color = "danger",
-      icon = icon("computer-mouse"),
+      icon = icon("arrow-pointer"),
       gradient = TRUE
       
     )
@@ -191,7 +224,7 @@ server <- function(input, output, session) {
       value = mean_clicks(),
       subtitle = "Average No. of Clicks",
       color = "danger",
-      icon = icon("computer-mouse"),
+      icon = icon("arrow-pointer"),
       gradient = TRUE
       
     )

@@ -18,6 +18,9 @@ library(bs4Dash)
 library(waiter)
 library(shinycssloaders)
 library(DT)
+library(callr)
+library(data.table)
+library(rintrojs)
 
 dashboardPage(
   #preloader = list(html = tagList(spin_1(), "Loading ..."), color = "#18191A"),
@@ -43,13 +46,27 @@ dashboardPage(
     ),
     sidebarMenu(id = "sidebar",
                 menuItem("Instructional Methods", tabName = "im", icon = icon("person-chalkboard")),
-                menuItem("Student Characteristics", tabName = "sc", icon = icon("user-graduate")))
+                menuItem("Student Characteristics", tabName = "sc", icon = icon("user-graduate"))),
+    sidebarUserPanel(
+      name = "Dashboard Information",
+      image = "info.jpg"
+    ),
+    actionButton("show", "Press for Info", icon = icon("circle-info"), status = "primary")
   ), # end of Sidebar
   dashboardBody(
     tabItems(
       tabItem("da",
               fluidPage(
-                tags$head(tags$style(".butt{background:#dc3545;} .butt{color: white;}")),
+                tags$head(tags$style(".butt{background:#dc3545;} .butt{color: white;}"),
+                          tags$style(
+                            HTML(".shiny-notification {
+             position:fixed;
+             top: calc(50%);
+             left: calc(50%);
+             }
+             "
+                            )
+                          )),
                 fluidRow(
                   column(5,
                          box(title = "Query Box", 
@@ -63,7 +80,9 @@ dashboardPage(
                                           width = "auto"),
                              actionButton(inputId = "submit", "Submit Query", status = "danger",
                                           icon = icon("play")),
-                             downloadButton("report", "Download Report", class = "butt"))),
+                             downloadButton("report", "Download Report", class = "butt"),
+                             actionButton("help", "Instructions", status = "primary",
+                                          icon = icon("circle-info")))),
                   column(7,
                          box(title = "Student Engagement Level Assignment Uncertainty", 
                              width = 12, status = "gray-dark", icon = icon("chart-area"),
@@ -96,12 +115,11 @@ dashboardPage(
                              width = 12, status = "danger",
                              solidHeader = TRUE, maximizable = TRUE, icon = icon("chart-bar"),
                              uiOutput("activity_el_query"),
-                             highchartOutput("fig4"))),
+                             withSpinner(highchartOutput("fig4")))),
                 fluidRow(box(title = "Virtual Learning Environment (VLE) Module or Course Access",
-                             width = 12, status = "white", collapsed = TRUE,
+                             width = 12, status = "white", collapsed = FALSE,
                              solidHeader = TRUE, maximizable = TRUE, icon = icon("chart-bar"),
-                             # uiOutput("activity_el_query"),
-                             highchartOutput("fig5")))
+                             withSpinner(highchartOutput("fig5"))))
               ) # end of fluid page
               ), # end of instructional methods tab
       tabItem("sc",
