@@ -35,6 +35,11 @@ server <- function(input, output, session) {
         )))
   })
   
+  observeEvent(input$help,
+               introjs(session, options = list("nextLabel"="Next",
+                                               "prevLabel"="Back",
+                                               "skipLabel"="Cancel User Guide")))
+  
   output$year_sem_query <- renderUI({
     selectInput('sel_year_sem',
                 label = "Select Academic Year & Semester",
@@ -55,13 +60,6 @@ server <- function(input, output, session) {
     req(input$sel_date_period[1])
     req(input$sel_date_period[2])
     req(input$sel_year_sem)
-    id <- showNotification(
-      "generating analysis...", 
-      duration = NULL, 
-      closeButton = FALSE,
-      type = "message"
-    )
-    on.exit(removeNotification(id), add = TRUE)
     
     svle_df() %>% 
       filter(date >= input$sel_date_period[1] & date <= input$sel_date_period[2] &
@@ -124,6 +122,13 @@ server <- function(input, output, session) {
   })
   
   output$fig1 <- renderHighchart({
+    id <- showNotification(
+      "generating analysis...", 
+      duration = NULL, 
+      closeButton = FALSE,
+      type = "message"
+    )
+    on.exit(removeNotification(id), add = TRUE)
     hchart(engagement_level_probabilities()$uncertainty, color = "#B71C1C", name = "GMM Uncertainty") %>% 
       hc_title(
         text = paste0("Distribution of Engagement Level Assignment Uncertainty")

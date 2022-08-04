@@ -12,3 +12,7 @@ oulad/
 
 # ignore
 *.RData
+
+# Ignore deployment file
+rsconnect/
+

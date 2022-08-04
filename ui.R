@@ -57,6 +57,7 @@ dashboardPage(
     tabItems(
       tabItem("da",
               fluidPage(
+                introjsUI(),
                 tags$head(tags$style(".butt{background:#dc3545;} .butt{color: white;}"),
                           tags$style(
                             HTML(".shiny-notification {
@@ -69,26 +70,49 @@ dashboardPage(
                           )),
                 fluidRow(
                   column(5,
-                         box(title = "Query Box", 
+                         introBox(
+                           data.step = 1,
+                           data.intro = p("This is the Gaussian Mixture Modeling (GMM) Query Box. You are required to press 
+                                          ", strong("Submit Query "), 
+                                          "with default inputs or enter inputs of your own choosing to generate GMM analysis"),
+                           box(title = "Query Box", 
                              solidHeader = TRUE, width = 12,status = "gray-dark",
                              maximizable = FALSE, icon = icon("magnifying-glass"),
-                             uiOutput("year_sem_query"),
-                             uiOutput("date_period_query"),
-                             numericInput("gmm_el", "Enter Number of Engagement Levels",
+                             introBox(
+                               data.step = 2,
+                               data.intro = "This is the academic year (e.g., 2013) and semester (e.g., B/J) you wish to 
+                               perform GMM on.",
+                               uiOutput("year_sem_query")),
+                             introBox(
+                               data.step = 3,
+                               data.intro = "This is the number of days before the start (0) of the selected year & semester
+                               and the number of days after the start (0) of the selected year & semester.",
+                               uiOutput("date_period_query")),
+                             introBox(
+                               data.step = 4,
+                               data.intro = "This is the number student engagement levels you want to create to understand 
+                               how low and high engaged students interact with the VLE by clicks",
+                               numericInput("gmm_el", "Enter Number of Engagement Levels",
                                           value = 6,
                                           min = 3, max = 6,
-                                          width = "auto"),
+                                          width = "auto")),
                              actionButton(inputId = "submit", "Submit Query", status = "danger",
                                           icon = icon("play")),
                              downloadButton("report", "Download Report", class = "butt"),
-                             actionButton("help", "Instructions", status = "primary",
-                                          icon = icon("circle-info")))),
+                             actionButton("help", "User Guide", status = "primary",
+                                          icon = icon("circle-info"))))),
                   column(7,
-                         box(title = "Student Engagement Level Assignment Uncertainty", 
+                         introBox(
+                           data.step = 5,
+                           data.intro = "The chart that will be/is displayed in this box shows how uncertain the GMM model
+                           is on assigning students to the selected number of engagement levels. 
+                           The uncertainty ranges from 0% - 100%. Uncertainty values close to 100% is an 
+                           indication of great uncertainty in assigning students to the different engagement levels.",
+                           box(title = "Student Engagement Level Assignment Uncertainty", 
                              width = 12, status = "gray-dark", icon = icon("chart-area"),
                              solidHeader = TRUE, maximizable = TRUE,
                              #verbatimTextOutput("test_output"),
-                             highchartOutput("fig1", height = 320)))),
+                             highchartOutput("fig1", height = 320))))),
                 fluidRow(
                   valueBoxOutput('min_c', width = 3),
                   valueBoxOutput("max_c", width = 3),
@@ -97,16 +121,35 @@ dashboardPage(
                 ),
                 fluidRow(
                   column(6,
-                         box(title = "Average Clicks Per Engagement Level", width = 12, status = "gray-dark",
+                         introBox(
+                           data.step = 6,
+                           data.intro = "The bar chart that will be/is displayed in this box shows how many times 
+                           a student in a particular engagement level interacted with the VLE on average based on clicks for 
+                           the selected academic period (year, semester & days).",
+                           box(title = "Average Clicks Per Engagement Level", width = 12, status = "gray-dark",
                              solidHeader = TRUE, maximizable = TRUE, icon = icon("chart-bar"),
-                             highchartOutput("fig2"))),
+                             highchartOutput("fig2")))),
                   column(6,
-                         box(title = "Student Count Per Engagement Level", width = 12, status = "gray-dark",
+                         introBox(
+                           data.step = 7,
+                           data.intro = "The bar chart that will be/is displayed in this box shows how many students 
+                           belong to each engagement level. This is for easily communicating how many students are highly 
+                           engaged or disengaged with the VLE",
+                           box(title = "Student Count Per Engagement Level", width = 12, status = "gray-dark",
                              solidHeader = TRUE, maximizable = TRUE, icon = icon("chart-bar"),
-                             highchartOutput("fig3")))),
-                fluidRow(box(title = "Student Engagement Level Information Table", 
-                             solidHeader = TRUE, width = 12,status = "gray-dark", collapsed = TRUE,
-                             maximizable = TRUE, withSpinner(DTOutput("table1"))))
+                             highchartOutput("fig3"))))),
+                fluidRow(
+                  column(12,
+                         introBox(
+                           data.step = 8,
+                           data.intro = "The table that will be/is displayed in this box shows the probability of a student 
+                    belonging to every engagement level, the engagement level a student belongs to, the uncertainty of 
+                    a student belonging to a engagement level, the number of times a student interacted with the materials 
+                    in the VLE for selected academic period.",
+                           box(title = "Student Engagement Level Information Table", 
+                               icon = icon("table"),
+                               solidHeader = TRUE, width = 12,status = "gray-dark", collapsed = TRUE,
+                               maximizable = TRUE, withSpinner(DTOutput("table1"))))))
               ) # end of fluid page
               ), # end of GMM data analysis tab
       tabItem("im",

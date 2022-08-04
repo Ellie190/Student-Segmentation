@@ -78,8 +78,9 @@ Local and global interpretations can be made.
 
 Quote Dr Mosia: This GMM/EDM Dashboard can be seen as a buffet of Student Engagement Knowledge Discovery
 
-, "a) what 
-               percentage of students in each engagement level are males/females (gender representation)
-               b) the percentage of students in each engagement level that are withdrawing, failing,
-               passing a course/module (final academic outcome representation"
+data.step = 8,
+                    data.intro = "The table that will be/is displayed in this box shows the probability of a student 
+                    belonging to every engagement level, the engagement level a student belongs to, the uncertainty of 
+                    a student belonging to a engagement level, the number of times a student interacted with the materials 
+                    in the VLE for selected academic period."
 
