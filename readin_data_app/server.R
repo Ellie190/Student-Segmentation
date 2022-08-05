@@ -74,7 +74,6 @@ server <- function(input, output, session) {
   
   gmm_model <- eventReactive(input$submit, ignoreNULL = FALSE,{
     req(input$gmm_el)
-    set.seed(4321)
     gmm_model <- Mclust(gmm_df(), G=input$gmm_el, verbose = FALSE)
     gmm_model
   })
@@ -265,7 +264,7 @@ server <- function(input, output, session) {
   
   output$activity_el_query <- renderUI({
     selectizeInput('activity_el_sel',
-                   label = "Select Engagement Level(s) to Visualise/Compare",
+                   label = "Select Engagement Level(s) to Visual/Compare",
                    choices = 1:6,
                    selected = 1:3,
                    multiple = TRUE,
@@ -489,7 +488,7 @@ server <- function(input, output, session) {
   
   output$region_el_query <- renderUI({
     selectizeInput('region_el_sel',
-                   label = "Select Engagement Level(s) to Visualise/Compare",
+                   label = "Select Engagement Level(s) to Visual/Compare",
                    choices = 1:6,
                    selected = 1:3,
                    multiple = TRUE,

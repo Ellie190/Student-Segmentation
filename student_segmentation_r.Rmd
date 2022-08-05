@@ -11,7 +11,8 @@ knitr::opts_chunk$set(echo = TRUE)
 
 
 
-
+# OULAD DATASET: 
+- https://analyse.kmi.open.ac.uk/open_dataset
 ```{r}
 # Open University Learning Analytics Dataset
 library(oulad)
@@ -25,8 +26,11 @@ library(tigerstats)
 # Gaussian mixture model (GMM)
 library(mclust)
 
-# Interactive ggplots
-library(plotly)
+# Interactive Data Visualization 
+library(highcharter)
+
+# Fast Data operations: merging and manipulation 
+library(data.table)
 ```
 
 
@@ -37,9 +41,16 @@ library(plotly)
 - *id_site* - an identification number for the VLE material.
 - *date* – the date of student’s interaction with the material measured as the number of days since the start of the - module-presentation.
 - *sum_click* – the number of times a student interacts with the material in that day.
+
+# BOTTLENECK 1
+- Where the data frame has the largest memory (10,6 million observations)
 ```{r}
-# Load student VLE data 
-# svle_df <- student_vle
+# To get information the OULAD Data set
+help.search("oulad")
+
+# Load student VLE data from oulad library
+set.seed(1234)
+svle_df <- student_vle
 # svle_df %>% head()
 student_vle %>% head()
 ```
@@ -88,7 +99,7 @@ favstats(clicks_df$sum_click)
 ```
 
 
-## GMM Model
+## GMM MODEL SECTION
 ```{r}
 # Selecting clicks for modelling
 gmm_df <- select(clicks_df, sum_click)
@@ -134,7 +145,7 @@ gmm_model$parameters$mean
 ```
 
 
-- Unceratinty: A probability expressing the degree of uncertainty in a student belonging to a group
+- Uncertainty: A value (0-1 or 0% - 100%) expressing the degree of uncertainty in a student belonging to a group
 ```{r}
 # Add clusters and uncertainty values to original dataset
 clicks_df$engagement_level <- gmm_model$classification
@@ -322,15 +333,19 @@ hchart(clicks_df$sum_click, color = "#B71C1C", name = "Clicks") %>%
 
 
 ```{r}
+# Minimum, Maximum, Average Sum of clicks values
 print(min(engagement_level_probabilities$sum_click))
 print(max(engagement_level_probabilities$sum_click))
 print(round(mean(engagement_level_probabilities$sum_click),2))
+
+# Average Uncertainty value
 print(round(mean(engagement_level_probabilities$uncertainty),2))
 ```
 
 
 
 ```{r}
+# Probability Table
 DT::datatable(engagement_level_probabilities,
               rownames = T,
               filter = "top",
@@ -338,7 +353,7 @@ DT::datatable(engagement_level_probabilities,
 ```
 
 
-## Instructional Methods Tab
+## INSTRUCTIONAL METHODS TAB
 ### Virtual Learning Environment Data 
 The csv file contains information about the available materials in the VLE. Typically these are html pages, pdf files, etc. Students have access to these materials online and their interactions with the materials are recorded. The vle.csv file contains the following columns:
 
@@ -349,24 +364,20 @@ _ **id_site** – an identification number of the material.
 - **week_from** – the week from which the material is planned to be used.
 - **week_to** – week until which the material is planned to be used.
 ```{r}
-# vle_df <- vle
+#vle_df <- vle
 # vle_df
 vle %>% head()
 ```
 
 
 
-```{r}
-# For fast data operations
-library(data.table)
-```
-
-
-
+# BOTTLENECK 2
+- Where the code takes on the longest to execute and has the data frame has the largest memory
 ```{r}
 # Merging the dataframes to link students with activities
 # Long execution code
-svle_vle_df <- data.table::merge.data.table(student_vle, vle, by = "id_site")
+# Replace svle_df with student_vle
+svle_vle_df <- data.table::merge.data.table(svle_df, vle, by = "id_site")
 svle_vle_df
 ```
 
@@ -520,7 +531,10 @@ hchart(activity_stats, "column", hcaes(x = activity_type, y = activity_access_pe
 
 ```{r}
 # Merging with student info data frame
-clicks_student_df <- merge.data.table(student, clicks_df, by = "id_student")
+# si <- read_csv("oulad/studentInfo.csv", show_col_types = FALSE)
+# si$num_of_prev_attempts <- as.integer(si$num_of_prev_attempts)
+# si <- as.data.frame(si)
+clicks_student_df <- merge.data.table(student, clicks_df, by = "id_student") # si was student
 clicks_student_df
 ```
 
@@ -531,7 +545,7 @@ module_stats <- clicks_student_df %>%
   summarise(number_of_students = n()) %>% 
   mutate(percentage_of_students = round(number_of_students / sum(number_of_students) * 100, 1)) %>% 
   arrange(desc(percentage_of_students))
-module_stats2
+module_stats
 ```
 
 
@@ -732,74 +746,99 @@ hchart(region_stats, "column", hcaes(x = region, y = percentage_of_students, gro
 
 
 
-```{r}
+## LIBRARY & DOWNLOADED DATA READ
 
+
+```{r}
+student_vle
+read_csv("oulad_original/studentVle.csv")
+```
+
+
+```{r}
+vle
+read_csv("oulad_original/vle.csv")
+```
+
+
+
+
+```{r}
+si <- read_csv("oulad_original/studentInfo.csv", show_col_types = FALSE)
+si$num_of_prev_attempts <- as.integer(si$num_of_prev_attempts)
+student
+```
+
+
+# Data Reduction
+- Creating a subset of the original data to use on the deployed dashboard
+```{r}
+# Reading data
+library(tidyverse)
+svle_df <- read_csv("oulad_original/studentVle.csv") %>% as.data.frame()
+#set.seed(1234)
+# Sampling 100 000
+svle_df2 <- sample_n(svle_df, 100000)
+
+# Data Sampling Per Year
+library(tigerstats)
+
+#set.seed(1537)
+B_2013 = subset(svle_df,code_presentation == "2013B")
+B_2013 = popsamp(25000,B_2013)
+
+#set.seed(1637)
+J_2013 = subset(svle_df,code_presentation == "2013J")
+J_2013 = popsamp(25000,J_2013)
+
+#set.seed(1737)
+B_2014 = subset(svle_df,code_presentation == "2014B")
+B_2014 = popsamp(25000,B_2014)
+
+#set.seed(1837)
+J_2014 = subset(svle_df,code_presentation == "2014J")
+J_2014 = popsamp(25000,J_2014)
+
+svle_df3 <- rbind(B_2013, J_2013, B_2014, J_2014)
+svle_df3
+```
+
+
+## COMPARING SAMPLE RESULTS
+```{r}
+# Ogriginal Data Sum of Clicks statistical summary
+favstats(svle_df$sum_click)
+```
+
+
+```{r}
+favstats(svle_df2$sum_click)
+```
+
+
+```{r}
+favstats(svle_df3$sum_click)
+```
+
+
+```{r}
+# For observing memory size
+vle_df <- read_csv("oulad_original/vle.csv") %>% as.data.frame()
+svle_vle_df <- data.table::merge.data.table(svle_df3, vle_df, by = "id_site")
+svle_vle_df
 ```
 
 
 
 ```{r}
-
+# Saving the subsetted data
+# write.csv(svle_df3,'oulad2/studentVle.csv', row.names = FALSE)
 ```
 
 
 
 ```{r}
-
-```
-
-
-
-```{r}
-
-```
-
-
-
-```{r}
-
-```
-
-
-
-```{r}
-
-```
-
-
-
-```{r}
-
-```
-
-
-
-```{r}
-
-```
-
-
-
-```{r}
-
-```
-
-
-
-```{r}
-
-```
-
-
-
-```{r}
-
-```
-
-
-
-```{r}
-
+# read_csv("oulad2/studentVle.csv", show_col_types = FALSE)
 ```
 
 

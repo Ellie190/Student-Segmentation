@@ -7,7 +7,8 @@ server <- function(input, output, session) {
   
   # GMM DATA ANALYSIS ----
   svle_df <- reactive({
-    read_csv("oulad/studentVle.csv", show_col_types = FALSE) %>% as.data.frame()
+    student_vle
+    #sample(student_vle,100000)
   })
   
   observeEvent(input$show, {
@@ -51,7 +52,7 @@ server <- function(input, output, session) {
   output$date_period_query <- renderUI({
     sliderInput("sel_date_period", label = "Select the Number of days since start-end of year & semester",
                 min = -25,#min(svle_df()$date), 
-                max =  269, #max(svle_df()$date), 
+                max =  269,max(svle_df()$date), 
                 step = 1,
                 value = c(-25,269))#c(min(svle_df()$date), max(svle_df()$date)))
   })
@@ -72,9 +73,10 @@ server <- function(input, output, session) {
     select(clicks_df(), sum_click)
   })
   
+  
   gmm_model <- eventReactive(input$submit, ignoreNULL = FALSE,{
+    set.seed(1737)
     req(input$gmm_el)
-    set.seed(4321)
     gmm_model <- Mclust(gmm_df(), G=input$gmm_el, verbose = FALSE)
     gmm_model
   })
@@ -272,12 +274,8 @@ server <- function(input, output, session) {
                    options = list(maxItems = 3))
   })
   
-  vle <- reactive({
-    read_csv("oulad/vle.csv")
-  })
-  
   svle_vle_df <- reactive({
-    svle_vle_df <- data.table::merge.data.table(svle_df(), vle(), by = "id_site")
+    svle_vle_df <- data.table::merge.data.table(student_vle, vle, by = "id_site")
     svle_vle_df
   })
     
@@ -325,15 +323,8 @@ server <- function(input, output, session) {
   })
   
   # Merging with student info data frame
-  student <- reactive({
-    si <- read_csv("oulad/studentInfo.csv", show_col_types = FALSE)
-    si$num_of_prev_attempts <- as.integer(si$num_of_prev_attempts)
-    si <- as.data.frame(si)
-    si
-  })
-  
   clicks_student_df <- reactive({
-    clicks_student_df <- merge.data.table(student(), clicks_df2(), by = "id_student")
+    clicks_student_df <- merge.data.table(student, clicks_df2(), by = "id_student")
     clicks_student_df
   })
   
@@ -418,7 +409,7 @@ server <- function(input, output, session) {
       summarise(number_of_students = n()) %>% 
       mutate(percentage_of_students = round(number_of_students / sum(number_of_students) * 100, 1)) %>% 
       arrange(desc(percentage_of_students))
-    #disability_stats$disability <- as.character(disability_stats$disability)
+    disability_stats$disability <- as.character(disability_stats$disability)
     disability_stats
   })
   

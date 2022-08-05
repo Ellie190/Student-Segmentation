@@ -1,3 +1,6 @@
+# Open University Learning Analytics Dataset
+library(oulad)
+
 # Data Analyis and Visualisation
 library(tidyverse)
 
@@ -17,7 +20,7 @@ library(data.table)
 library(rintrojs)
 
 dashboardPage(
-  #preloader = list(html = tagList(spin_1(), "Loading ..."), color = "#18191A"),
+  preloader = list(html = tagList(spin_1(), "Loading ..."), color = "#18191A"),
   fullscreen = TRUE,
   dashboardHeader(title = dashboardBrand(
     title = "EDM Dashboard",
@@ -87,8 +90,8 @@ dashboardPage(
                                data.intro = "This is the number student engagement levels you want to create to understand 
                                how low and high engaged students interact with the VLE by clicks",
                                numericInput("gmm_el", "Enter Number of Engagement Levels",
-                                          value = 3,
-                                          min = 1, max = 6,
+                                          value = 6,
+                                          min = 3, max = 6,
                                           width = "auto")),
                              actionButton(inputId = "submit", "Submit Query", status = "danger",
                                           icon = icon("play")),

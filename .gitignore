@@ -4,8 +4,6 @@
 *.app
 .Rproj.user
 
-# OULAD Folder
-oulad/
 
 # Notebook checkpoints
 .ipynb_checkpoints/
@@ -15,4 +13,8 @@ oulad/
 
 # Ignore deployment file
 rsconnect/
+
+# files to ignore
+readin_data_app/oulad/
+oulad_original/
 

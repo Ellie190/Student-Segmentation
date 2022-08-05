@@ -1,3 +1,9 @@
+library(rsconnect)
+options(rsconnect.max.bundle.size=3145728000)
+
+# Open University Learning Analytics Dataset
+library(oulad)
+
 # Data Analyis and Visualisation
 library(tidyverse)
 
@@ -87,8 +93,8 @@ dashboardPage(
                                data.intro = "This is the number student engagement levels you want to create to understand 
                                how low and high engaged students interact with the VLE by clicks",
                                numericInput("gmm_el", "Enter Number of Engagement Levels",
-                                          value = 3,
-                                          min = 1, max = 6,
+                                          value = 6,
+                                          min = 3, max = 6,
                                           width = "auto")),
                              actionButton(inputId = "submit", "Submit Query", status = "danger",
                                           icon = icon("play")),
