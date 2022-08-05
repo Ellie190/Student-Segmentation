@@ -132,8 +132,8 @@ dashboardPage(
                            data.step = 8,
                            data.intro = "The table that will be/is displayed in this box shows the probability of a student 
                     belonging to every engagement level, the engagement level a student belongs to, the uncertainty of 
-                    a student belonging to a engagement level, the number of times a student interacted with the materials 
-                    in the VLE for selected academic period.",
+                    a student belonging to an engagement level, the number of times a student interacted with the materials 
+                    in the VLE for the selected academic period.",
                            box(title = "Student Engagement Level Information Table", 
                                icon = icon("table"),
                                solidHeader = TRUE, width = 12,status = "gray-dark", collapsed = TRUE,

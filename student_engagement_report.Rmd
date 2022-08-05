@@ -127,13 +127,13 @@ engagement_level_stats <- merge(engagement_level_avg_df, engagement_level_count_
 
 
 #### Student Engagement Level Assignment Uncertainty Analysis
-- The average uncertainty is an indication of how uncertain the model is when assigning a student to an engagement level. 
+- The average uncertainty is an indication of how uncertain the model is when assigning a student to an engagement level
 - **Interpretation:** On average the model is likely to assign a student to a particular engagement level with a 
 **`r paste0(round(mean(engagement_level_probabilities$uncertainty),2), " %")`** uncertainty
 <br>
 - The chart displayed below shows how uncertain the GMM model is on assigning students to the selected number of engagement levels.
-- The uncertainty ranges from 0% - 100%. 
-- Uncertainty values close to 100% is an indication of great uncertainty in assigning students to the different engagement levels.
+- The uncertainty ranges from 0% - 100%
+- Uncertainty values close to 100% is an indication of great uncertainty in assigning students to the different engagement levels
 ```{r}
 hchart(engagement_level_probabilities$uncertainty, color = "#B71C1C", name = "GMM Uncertainty") %>% 
   hc_title(
@@ -146,8 +146,9 @@ hchart(engagement_level_probabilities$uncertainty, color = "#B71C1C", name = "GM
 
 
 #### Statistical Summary of Interactions (Clicks) with the Virtual Learning Environment 
-- The chart on the left can be zoomed to get a clear view of how many times students normally interact (clicks) with the virtual learning environment
+- The chart on the left can be zoomed by highlighting a region in the chart to get a clear view of how many times students normally interact (clicks) with the virtual learning environment
 - Hover over the box section of the chart on the right to get a statistical summary of clicks or interactions in the VLE
+- On average a student in the university interacts with or clicks resources in the virtual learning environment (VLE)  **`r round(mean(engagement_level_probabilities$sum_click),0)`** times
 ```{r, figures-side, fig.show="hold", out.width="50%"}
 plot_a <- hchart(clicks_df$sum_click, color = "#B71C1C", name = "Clicks") %>% 
   hc_title(
@@ -221,7 +222,7 @@ DT::datatable(engagement_level_probabilities,
 
 
 #### Instructional Methods Analysis 
-- In this section, charts are displayed to illustrate the Activities & Modules students in each engagement level access the most or least in the Virtual Learning Environment (VLE). 
+- In this section, charts are displayed to illustrate the Activities & Modules students in each engagement level access the most or least in the Virtual Learning Environment (VLE)
 ```{r}
 # Reading in the VLE activities data
 vle_df <- read_csv("oulad/vle.csv") %>% as.data.frame()
