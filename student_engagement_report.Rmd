@@ -1,0 +1,727 @@
+---
+title: |
+  ![](logo.jpg){width=2.5in}  
+  Student Engagement Report
+author: "Open University Learning Analytics Dataset"
+date: "`r Sys.Date()`"
+output: 
+  html_document:
+    theme: flatly
+params:
+  year_semester: "2013B"
+  date_period: !r c(-25, 269)
+  e_levels: 3
+---
+
+<style type="text/css">
+
+h1.title {
+  text-align: center;
+}
+h4.author { /* Header 4 - and the author and data headers use this too  */
+  text-align: center;
+}
+h4.date { /* Header 4 - and the author and data headers use this too  */
+  text-align: center;
+}
+</style>
+
+ <style type="text/css">
+ .main-container {
+   max-width: 80% !important;
+   margin: auto;
+ }
+ </style>
+ 
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo    = FALSE, 
+  message = FALSE, 
+  warning = FALSE,
+  comment = NA,
+  fig.width=12)
+
+
+library(tidyverse)
+library(janitor)
+library(readxl)
+library(DT)
+library(lubridate)
+library(highcharter)
+```
+
+
+#### Academic Year and Semester
+```{r}
+params$year_semester %>% cat()
+```
+
+
+
+#### Date of Interaction between Student and "Resource" in Days from Official Course Start
+```{r}
+paste0("Number of days before the official course start: ",params$date_period[1]) %>% cat()
+paste0("Number of days after the official course start: ",params$date_period[2]) %>% cat()
+```
+
+
+#### Number of Engagement Levels
+```{r}
+params$e_levels %>% cat()
+```
+
+
+```{r}
+svle_df <- read_csv("oulad/studentVle.csv", show_col_types = FALSE) %>% as.data.frame()
+
+# Summing unique student clicks of the selected duration
+clicks_df <- svle_df %>% 
+  filter(date >= params$date_period[1] & date <= params$date_period[2] &
+  code_presentation %in% params$year_semester) %>%
+  group_by(id_student) %>% 
+  summarise(sum_click = sum(sum_click))
+
+# Extracting the clicks columns for modeling
+gmm_df <- select(clicks_df, sum_click)
+
+# Creating the Gaussian Mixture Model (GMM) with the selected engagement levels
+gmm_model <- Mclust(gmm_df, G=params$e_levels, verbose = FALSE)
+
+# Adding the engagement level classification and uncertainty columns to the clicks data frame
+clicks_df$engagement_level <- gmm_model$classification
+clicks_df$uncertainty <- gmm_model$uncertainty
+
+# Creating a data frame with the probabilities of students belonging to each cluster
+engagement_level_probabilities <- gmm_model$z
+colnames(engagement_level_probabilities) <- paste0('engagement_level', 1:gmm_model$G)
+options(scipen=999)
+engagement_level_probabilities <- engagement_level_probabilities %>%
+  round(2) %>% 
+  as.data.frame()
+
+# Adding engagement level, uncertainty, sum of clicks and student id to the GMM probability table
+engagement_level_probabilities$engagement_level <- clicks_df$engagement_level
+engagement_level_probabilities$uncertainty <- round(gmm_model$uncertainty*100,2)
+engagement_level_probabilities$sum_click <- clicks_df$sum_click
+engagement_level_probabilities$id_student <- clicks_df$id_student
+
+# Creating a engagement level (cluster) mean table 
+engagement_level_avg_df <- as.data.frame(round(gmm_model$parameters$mean))
+colnames(engagement_level_avg_df) <- "average_clicks"
+# Rename rownames to engagement_level 
+engagement_level_avg_df <- cbind(engagement_level = rownames(engagement_level_avg_df), engagement_level_avg_df)
+# Remove rownames 
+rownames(engagement_level_avg_df) <- NULL
+
+# Creating an Engagement Level Count Table
+# Obtain number of observations in each engagement level (cluster). 
+engagement_level_count_df <- clicks_df %>%
+  group_by(engagement_level) %>%
+  summarise(Number_of_students = n())
+
+# Engagement Level Statistics Table containing engagement level count and mean (average clicks)
+engagement_level_stats <- merge(engagement_level_avg_df, engagement_level_count_df) %>% 
+  arrange(average_clicks)
+```
+
+
+#### Student Engagement Level Assignment Uncertainty Analysis
+- The average uncertainty is an indication of how uncertain the model is when assigning a student to an engagement level. 
+- **Interpretation:** On average the model is likely to assign a student to a particular engagement level with a 
+**`r paste0(round(mean(engagement_level_probabilities$uncertainty),2), " %")`** uncertainty
+<br>
+- The chart displayed below shows how uncertain the GMM model is on assigning students to the selected number of engagement levels.
+- The uncertainty ranges from 0% - 100%. 
+- Uncertainty values close to 100% is an indication of great uncertainty in assigning students to the different engagement levels.
+```{r}
+hchart(engagement_level_probabilities$uncertainty, color = "#B71C1C", name = "GMM Uncertainty") %>% 
+  hc_title(
+    text = paste0("Distribution of Engagement Level Assignment Uncertainty")
+  ) %>% 
+  hc_xAxis(title = list(text = "Uncertainty"),
+           labels = list(format = "{value}%")) %>% 
+  hc_yAxis(title = list(text = "Number of Students"))
+```
+
+
+#### Statistical Summary of Interactions (Clicks) with the Virtual Learning Environment 
+- The chart on the left can be zoomed to get a clear view of how many times students normally interact (clicks) with the virtual learning environment
+- Hover over the box section of the chart on the right to get a statistical summary of clicks or interactions in the VLE
+```{r, figures-side, fig.show="hold", out.width="50%"}
+plot_a <- hchart(clicks_df$sum_click, color = "#B71C1C", name = "Clicks") %>% 
+  hc_title(
+    text = paste0("Distribution of VLE Clicks")
+  ) %>% 
+  hc_xAxis(title = list(text = "Number of Clicks")) %>% 
+  hc_yAxis(title = list(text = "Number of Students"))
+
+bp_clicks <- data_to_boxplot(data = clicks_df, 
+                             variable = sum_click,
+                             add_outliers = FALSE,
+                             fillColor = "#B71C1C",
+                             color = "black")
+plot_b <- highchart() %>%
+  hc_xAxis(type = "category",
+           title = list(text = "Clicks")) %>%
+  hc_yAxis(title = list(text = "Number of Clicks")) %>% 
+  hc_title(
+    text = paste0("Statistical Summary of VLE Clicks without Outliers")
+  ) %>% 
+  hc_add_series_list(bp_clicks) %>% 
+  hc_legend(FALSE)
+hw_grid(plot_a, plot_b)
+```
+
+
+#### Engagement Level Analysis 
+- The bar chart left shows the average number of interactions (clicks) a student has with the Virtual Learning Environment in each engagement level
+- lower levels are an indication of low engagement
+- higher levels are an indication of high engagement
+- The bar chart on the right shows the number of students in each engagement level
+```{r}
+plot_c <- hchart(engagement_level_stats, "column", hcaes(x = engagement_level, y = average_clicks), 
+       dataLabels = list(enabled = TRUE),
+       name = "Average No. of Clicks") %>% 
+  hc_title(
+    text = paste0("Average Number of Clicks for Each Engagement Level")
+  ) %>% 
+  hc_xAxis(title = list(text = "Engagement Level")) %>% 
+  hc_yAxis(title = list(text = "Average Number of Clicks")) %>% 
+  hc_exporting(
+    enabled = TRUE)
+
+plot_d <- hchart(engagement_level_stats, "column", hcaes(x = engagement_level, y = Number_of_students), 
+       dataLabels = list(enabled = TRUE),
+       name = "No of Students") %>% 
+  hc_title(
+    text = paste0("Number of Students in Each Engagement Level")
+  ) %>% 
+  hc_xAxis(title = list(text = "Engagement Level")) %>% 
+  hc_yAxis(title = list(text = "Number of Students")) %>% 
+  hc_exporting(
+    enabled = TRUE)
+hw_grid(plot_c, plot_d)
+```
+
+
+#### Student Engagement Level Information Table
+- The table below shows the probability of a student belonging to every engagement level and other related information
+```{r}
+DT::datatable(engagement_level_probabilities,
+              rownames = F,
+              filter = "top",
+              extensions = 'Buttons',
+              caption = 'A data table produced based on the GMM Model Results',
+              options = list(pageLength = 5, scrollX = TRUE, 
+                             dom = 'Bfrtip',
+    buttons = c('copy', 'csv', 'excel', 'pdf', 'print')),
+              class = 'cell-border stripe')
+```
+
+
+#### Instructional Methods Analysis 
+- In this section, charts are displayed to illustrate the Activities & Modules students in each engagement level access the most or least in the Virtual Learning Environment (VLE). 
+```{r}
+# Reading in the VLE activities data
+vle_df <- read_csv("oulad/vle.csv") %>% as.data.frame()
+# Merging dataframes based on site id
+svle_vle_df <- data.table::merge.data.table(svle_df, vle_df, by = "id_site")
+
+# Counting how many times a student accesses an activity
+activity_df <- svle_vle_df %>% 
+  group_by(id_student,activity_type) %>% 
+  summarise(activity_access_count = n()) %>% 
+  as.data.frame()
+
+# Merging data frames to include engagement level for student activity analysis
+clicks_activity_df <- merge.data.table(activity_df, clicks_df, by = "id_student")
+
+# Activity stats based on engagement levels
+activity_stats <- clicks_activity_df %>% 
+  filter(engagement_level %in% c(1:6)) %>%
+  group_by(engagement_level, activity_type) %>%
+  summarise(activity_access_count = n()) %>% 
+  mutate(activity_access_percent = round(activity_access_count / sum(activity_access_count) * 100, 1)) %>% 
+  arrange(desc(activity_access_percent))
+```
+
+
+```{r}
+hchart(activity_stats, "column", hcaes(x = activity_type, y = activity_access_percent, group = engagement_level), 
+       dataLabels = list(enabled = TRUE, format = "{y}"),
+       stacking = "normal") %>% 
+  hc_title(
+    text = paste0("Percentage of Students that Access each VLE Activity in Selected Engagement Levels")
+  ) %>% 
+  hc_xAxis(title = list(text = "VLE Activity")) %>% 
+  hc_yAxis(title = list(text = "Percentage of Students"),
+           labels = list(format = "{value}%")) %>% 
+  hc_legend(title = list(text = "Engagement Level")) %>% 
+  hc_exporting(
+    enabled = TRUE)
+```
+
+
+```{r}
+student_df <- read_csv("oulad/studentInfo.csv", show_col_types = FALSE)
+student_df$num_of_prev_attempts <- as.integer(student_df$num_of_prev_attempts)
+student_df <- as.data.frame(student_df)
+
+clicks_student_df <- merge.data.table(student_df, clicks_df, by = "id_student")
+
+module_stats <- clicks_student_df %>% 
+  filter(engagement_level %in% c(1:6)) %>% 
+  group_by(engagement_level, code_module) %>%
+  summarise(number_of_students = n()) %>% 
+  mutate(percentage_of_students = round(number_of_students / sum(number_of_students) * 100, 1)) %>% 
+  arrange(desc(percentage_of_students))
+```
+
+
+```{r}
+hchart(module_stats, "column", hcaes(x = code_module, y = percentage_of_students, group = engagement_level), 
+       dataLabels = list(enabled = TRUE, format = "{y}%")) %>% 
+  hc_title(
+    text = paste0("Modules Accessed by Engagement Level(s):")
+  ) %>% 
+  hc_xAxis(title = list(text = "Module")) %>% 
+  hc_yAxis(title = list(text = "Percentage of Students"), 
+           labels = list(format = "{value}%")) %>% 
+  hc_legend(title = list(text = "Engagement Level")) %>% 
+  hc_exporting(
+    enabled = TRUE)
+```
+
+#### Student Characteristics/Demograhics Analysis According to Engagement Levels
+`In this section, charts are displayed to show:`
+
+- **e.g. 1:** what percentage of students in each engagement level are males/females (gender representation)
+- **e.g. 2:** the percentage of students in each engagement level that are withdrawing, failing, passing a course/module (final academic outcome representation)
+- **Note:** The same is done for student age, student disability status, student's region of stay and the number of previous attempts a student has had in a course or module
+```{r}
+gender_stats <- clicks_student_df %>% 
+  filter(engagement_level %in% c(1:6)) %>% 
+  group_by(engagement_level, gender) %>%
+  summarise(number_of_students = n()) %>% 
+  mutate(percentage_of_students = round(number_of_students / sum(number_of_students) * 100, 1)) %>% 
+  arrange(desc(percentage_of_students))
+
+age_stats <- clicks_student_df %>% 
+  filter(engagement_level %in% c(1:6)) %>% 
+  group_by(engagement_level, age_band) %>%
+  summarise(number_of_students = n()) %>% 
+  mutate(percentage_of_students = round(number_of_students / sum(number_of_students) * 100, 1)) %>% 
+  arrange(desc(percentage_of_students))
+```
+
+
+```{r}
+plot_gender_stats <- hchart(gender_stats, "column", hcaes(x = gender,
+                                                          y = percentage_of_students, group = engagement_level), 
+       dataLabels = list(enabled = TRUE, format = "{y}%")) %>% 
+  hc_title(
+    text = paste0("Gender Representation in Engagement Level(s):")
+  ) %>% 
+  hc_xAxis(title = list(text = "Gender")) %>% 
+  hc_yAxis(title = list(text = "Percentage of Students"), 
+           labels = list(format = "{value}%")) %>% 
+  hc_legend(title = list(text = "Engagement Level")) %>% 
+  hc_exporting(
+    enabled = TRUE)
+
+plot_age_stats <- hchart(age_stats, "column", hcaes(x = age_band,
+                                                    y = percentage_of_students, group = engagement_level), 
+       dataLabels = list(enabled = TRUE, format = "{y}%")) %>% 
+  hc_title(
+    text = paste0("Student Age Band Representation in Engagement Level(s):")
+  ) %>% 
+  hc_xAxis(title = list(text = "Age Band")) %>% 
+  hc_yAxis(title = list(text = "Percentage of Students"), 
+           labels = list(format = "{value}%")) %>% 
+  hc_legend(title = list(text = "Engagement Level")) %>% 
+  hc_exporting(
+    enabled = TRUE)
+hw_grid(plot_gender_stats, plot_age_stats)
+```
+
+
+```{r}
+disability_stats <- clicks_student_df %>% 
+  filter(engagement_level %in% c(1:6)) %>% 
+  group_by(engagement_level, disability) %>%
+  summarise(number_of_students = n()) %>% 
+  mutate(percentage_of_students = round(number_of_students / sum(number_of_students) * 100, 1)) %>% 
+  arrange(desc(percentage_of_students))
+
+prev_attempts_stats <- clicks_student_df %>% 
+  filter(engagement_level %in% c(1:6)) %>% 
+  group_by(engagement_level, num_of_prev_attempts) %>%
+  summarise(number_of_students = n()) %>% 
+  mutate(percentage_of_students = round(number_of_students / sum(number_of_students) * 100, 1)) %>% 
+  arrange(desc(percentage_of_students))
+```
+
+
+```{r}
+plot_disability_stats <- hchart(disability_stats, "column", hcaes(x = disability,
+                                                                  y = percentage_of_students,
+                                                                  group = engagement_level), 
+       dataLabels = list(enabled = TRUE, format = "{y}%")) %>% 
+  hc_title(
+    text = paste0("Student with/without a Disability Representation in Engagement Level(s):")
+  ) %>% 
+  hc_xAxis(title = list(text = "Disability")) %>% 
+  hc_yAxis(title = list(text = "Percentage of Students"), 
+           labels = list(format = "{value}%")) %>% 
+  hc_legend(title = list(text = "Engagement Level")) %>% 
+  hc_exporting(
+    enabled = TRUE)
+
+plot_prev_attempts_stats <- hchart(prev_attempts_stats, "column", hcaes(x = num_of_prev_attempts, 
+                                            y = percentage_of_students, group = engagement_level), 
+       dataLabels = list(enabled = TRUE, format = "{y}%")) %>% 
+  hc_title(
+    text = paste0("Number of Previous Attempts in Course according to each Engagement Level")
+  ) %>% 
+  hc_xAxis(title = list(text = "Number of Previous Attempts")) %>% 
+  hc_yAxis(title = list(text = "Percentage of Students"), 
+           labels = list(format = "{value}%")) %>% 
+  hc_legend(title = list(text = "Engagement Level")) %>% 
+  hc_exporting(
+    enabled = TRUE)
+hw_grid(plot_disability_stats, plot_prev_attempts_stats)
+```
+
+
+```{r}
+final_results_stats <- clicks_student_df %>% 
+  filter(engagement_level %in% c(1:6)) %>% 
+  group_by(engagement_level, final_result) %>%
+  summarise(number_of_students = n()) %>% 
+  mutate(percentage_of_students = round(number_of_students / sum(number_of_students) * 100, 1)) %>% 
+  arrange(desc(percentage_of_students))
+
+region_stats <- clicks_student_df %>% 
+  filter(engagement_level %in% c(1:6)) %>% 
+  group_by(engagement_level, region) %>%
+  summarise(number_of_students = n()) %>% 
+  mutate(percentage_of_students = round(number_of_students / sum(number_of_students) * 100, 1)) %>% 
+  arrange(desc(percentage_of_students))
+```
+
+
+```{r}
+hchart(final_results_stats, "column", hcaes(x = final_result, 
+                                            y = percentage_of_students, group = engagement_level), 
+       dataLabels = list(enabled = TRUE, format = "{y}%")) %>% 
+  hc_title(
+    text = paste0("Student Final Academic Outcome in each Engagement Level")
+  ) %>% 
+  hc_xAxis(title = list(text = "Final Result")) %>% 
+  hc_yAxis(title = list(text = "Percentage of Students"), 
+           labels = list(format = "{value}%")) %>% 
+  hc_legend(title = list(text = "Engagement Level")) %>% 
+  hc_exporting(
+    enabled = TRUE)
+```
+
+
+```{r}
+hchart(region_stats, "column", hcaes(x = region, y = percentage_of_students, group = engagement_level), 
+       dataLabels = list(enabled = TRUE, format = "{y}%")) %>% 
+  hc_title(
+    text = paste0("Engagement Level Representation based on Student's Region of Stay")
+  ) %>% 
+  hc_xAxis(title = list(text = "Regions")) %>% 
+  hc_yAxis(title = list(text = "Percentage of Students"), 
+           labels = list(format = "{value}%")) %>% 
+  hc_legend(title = list(text = "Engagement Level")) %>% 
+  hc_exporting(
+    enabled = TRUE)
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```

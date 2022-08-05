@@ -250,8 +250,15 @@ server <- function(input, output, session) {
   # Data Table
   output$table1 <- renderDT({
     DT::datatable(engagement_level_probabilities(),
+                  filter = "top",
+                  extensions = c('Buttons', 'Scroller'),
                   rownames = F,
-                  options = list(pageLength = 5, scrollX = TRUE, info = FALSE,
+                  class = 'cell-border stripe',
+                  options = list(scrollX = 200,
+                                 scrollY = 200,
+                                 scroller = TRUE,
+                                 dom = 'Bfrtip',
+                                 buttons = c('copy', 'csv', 'excel', 'pdf', 'print'),
                                  initComplete = JS(
                                    "function(settings, json) {",
                                    "$(this.api().table().header()).css({'background-color': '#7cb5ec', 'color': 'black'});",
@@ -266,7 +273,7 @@ server <- function(input, output, session) {
   output$activity_el_query <- renderUI({
     selectizeInput('activity_el_sel',
                    label = "Select Engagement Level(s) to Visualise/Compare",
-                   choices = 1:6,
+                   choices = 1:gmm_model()$G,
                    selected = 1:3,
                    multiple = TRUE,
                    options = list(maxItems = 3))
@@ -490,7 +497,7 @@ server <- function(input, output, session) {
   output$region_el_query <- renderUI({
     selectizeInput('region_el_sel',
                    label = "Select Engagement Level(s) to Visualise/Compare",
-                   choices = 1:6,
+                   choices = 1:gmm_model()$G,
                    selected = 1:3,
                    multiple = TRUE,
                    options = list(maxItems = 3))
@@ -521,6 +528,49 @@ server <- function(input, output, session) {
   })
   
   
+  # Filename that includes date and time
+  file_path <- reactive({
+    file_path <- Sys.Date() %>% # now()
+      str_replace_all("[[:punct:]]", "_") %>%
+      str_replace(" ", "T") %>%
+      str_c("_student_engagement_report.html")
+  })
+  
+  # Report file download
+  output$report <- downloadHandler(
+    # Downloaded file name
+    filename = file_path(),
+    content = function(file) {
+      # Copy the report file to a temporary directory before processing it, in
+      # case we don't have write permissions to the current working dir (which
+      # can happen when deployed).
+      tempReport <- file.path(tempdir(), "student_engagement_report.Rmd")
+      file.copy("student_engagement_report.Rmd", tempReport, overwrite = TRUE)
+      
+      # Set up parameters to pass to Rmd document
+      params <- list(year_semester = input$sel_year_sem,
+                     date_period = input$sel_date_period,
+                     e_levels = input$gmm_el)
+      id <- showNotification(
+        "Rendering report...",
+        duration = NULL,
+        closeButton = FALSE,
+        type = "message"
+      )
+      on.exit(removeNotification(id), add = TRUE)
+      
+      # Knit the document, passing in the `params` list, and eval it in a
+      # child of the global environment (this isolates the code in the document
+      # from the code in this app).
+      rmarkdown::render(
+        input = "student_engagement_report.Rmd",
+        output_format = "html_document",
+        output_file = file,
+        params = params,
+        envir = new.env()
+      )
+    }
+  )
   
   
   

@@ -1,12 +1,6 @@
-# Data Analyis and Visualisation
 library(tidyverse)
-
-# Gaussian mixture model (GMM)
 library(mclust)
-
-# Interactive Data Visualization 
 library(highcharter)
-
 library(shiny)
 library(bs4Dash)
 library(waiter)
@@ -17,7 +11,7 @@ library(data.table)
 library(rintrojs)
 
 dashboardPage(
-  #preloader = list(html = tagList(spin_1(), "Loading ..."), color = "#18191A"),
+  preloader = list(html = tagList(spin_1(), "Loading ..."), color = "#18191A"),
   fullscreen = TRUE,
   dashboardHeader(title = dashboardBrand(
     title = "EDM Dashboard",
