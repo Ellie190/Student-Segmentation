@@ -40,21 +40,20 @@ server <- function(input, output, session) {
                introjs(session, options = list("nextLabel"="Next",
                                                "prevLabel"="Back",
                                                "skipLabel"="Cancel User Guide")))
-  
   output$year_sem_query <- renderUI({
     selectInput('sel_year_sem',
                 label = "Select Academic Year & Semester",
-                choices = c("2013B", "2013J", "2014B", "2014J"),#unique(svle_df()$code_presentation),
+                choices = c("2013B", "2013J", "2014B", "2014J"), #unique(svle_df()$code_presentation),
                 multiple = TRUE,
                 selected = c("2013B", "2013J", "2014B", "2014J"))
   })
   
   output$date_period_query <- renderUI({
     sliderInput("sel_date_period", label = "Select the Number of days since start-end of year & semester",
-                min = -25,#min(svle_df()$date), 
-                max =  269,max(svle_df()$date), 
+                min = -25, #min(svle_df()$date), 
+                max =  269, #max(svle_df()$date), 
                 step = 1,
-                value = c(-25,269))#c(min(svle_df()$date), max(svle_df()$date)))
+                value = c(-25,269)) #c(min(svle_df()$date), max(svle_df()$date)))
   })
   
   clicks_df <- eventReactive(input$submit, ignoreNULL = FALSE,{
