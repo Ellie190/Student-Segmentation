@@ -76,11 +76,5 @@ Activity Box - e.g. m% of students in engagement level n access the homepage act
 Module Box - e.g., m% of students in engagement level n access the BBB module in the VLE
 Local and global interpretations can be made.
 
-Quote Dr Mosia: This GMM/EDM Dashboard can be seen as a buffet of Student Engagement Knowledge Discovery
-
-data.step = 8,
-                    data.intro = "The table that will be/is displayed in this box shows the probability of a student 
-                    belonging to every engagement level, the engagement level a student belongs to, the uncertainty of 
-                    a student belonging to a engagement level, the number of times a student interacted with the materials 
-                    in the VLE for selected academic period."
+Quote: This GMM/EDM Dashboard can be seen as a buffet of Student Engagement Knowledge Discovery
 
