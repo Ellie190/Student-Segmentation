@@ -8,7 +8,6 @@ server <- function(input, output, session) {
   # GMM DATA ANALYSIS ----
   svle_df <- reactive({
     student_vle
-    #sample(student_vle,100000)
   })
   
   observeEvent(input$show, {
@@ -33,27 +32,28 @@ server <- function(input, output, session) {
                   student's region of stay and the number of previous attempts a student has had in a 
                   course or module")
         )
-        )))
+      )))
   })
   
   observeEvent(input$help,
                introjs(session, options = list("nextLabel"="Next",
                                                "prevLabel"="Back",
                                                "skipLabel"="Cancel User Guide")))
+  
   output$year_sem_query <- renderUI({
     selectInput('sel_year_sem',
                 label = "Select Academic Year & Semester",
-                choices = c("2013B", "2013J", "2014B", "2014J"), #unique(svle_df()$code_presentation),
+                choices = c("2013B", "2013J", "2014B", "2014J"),#unique(svle_df()$code_presentation),
                 multiple = TRUE,
                 selected = c("2013B", "2013J", "2014B", "2014J"))
   })
   
   output$date_period_query <- renderUI({
     sliderInput("sel_date_period", label = "Select the Number of days since start-end of year & semester",
-                min = -25, #min(svle_df()$date), 
+                min = -25,#min(svle_df()$date), 
                 max =  269, #max(svle_df()$date), 
                 step = 1,
-                value = c(-25,269)) #c(min(svle_df()$date), max(svle_df()$date)))
+                value = c(-25,269))#c(min(svle_df()$date), max(svle_df()$date)))
   })
   
   clicks_df <- eventReactive(input$submit, ignoreNULL = FALSE,{
@@ -72,10 +72,9 @@ server <- function(input, output, session) {
     select(clicks_df(), sum_click)
   })
   
-  
   gmm_model <- eventReactive(input$submit, ignoreNULL = FALSE,{
-    set.seed(1737)
     req(input$gmm_el)
+    set.seed(4321)
     gmm_model <- Mclust(gmm_df(), G=input$gmm_el, verbose = FALSE)
     gmm_model
   })
@@ -251,15 +250,22 @@ server <- function(input, output, session) {
   # Data Table
   output$table1 <- renderDT({
     DT::datatable(engagement_level_probabilities(),
+                  filter = "top",
+                  extensions = c('Buttons', 'Scroller'),
                   rownames = F,
-                  options = list(pageLength = 5, scrollX = TRUE, info = FALSE,
+                  class = 'cell-border stripe',
+                  options = list(scrollX = 200,
+                                 scrollY = 200,
+                                 scroller = TRUE,
+                                 dom = 'Bfrtip',
+                                 buttons = c('copy', 'csv', 'excel', 'pdf', 'print'),
                                  initComplete = JS(
                                    "function(settings, json) {",
                                    "$(this.api().table().header()).css({'background-color': '#7cb5ec', 'color': 'black'});",
                                    "}")))
   })
   
- # INSTRUCTIONAL METHODS ----
+  # INSTRUCTIONAL METHODS ----
   
   # Merging the dataframes to link students with activities
   # Long execution code
@@ -267,7 +273,7 @@ server <- function(input, output, session) {
   output$activity_el_query <- renderUI({
     selectizeInput('activity_el_sel',
                    label = "Select Engagement Level(s) to Visualise/Compare",
-                   choices = 1:6,
+                   choices = 1:gmm_model()$G,
                    selected = 1:3,
                    multiple = TRUE,
                    options = list(maxItems = 3))
@@ -277,7 +283,7 @@ server <- function(input, output, session) {
     svle_vle_df <- data.table::merge.data.table(student_vle, vle, by = "id_site")
     svle_vle_df
   })
-    
+  
   # Long execution code
   # Number of Times student accessed an activity 
   activity_df <- reactive({
@@ -287,24 +293,24 @@ server <- function(input, output, session) {
       as.data.frame()
     activity_df
   })
-    
-    
+  
+  
   clicks_activity_df <- reactive({
     # Merging data frames
     clicks_activity_df <- merge.data.table(activity_df(), clicks_df2(), by = "id_student")
     clicks_activity_df
   })
-    
-    activity_stats <- reactive({
-      activity_stats <- clicks_activity_df() %>% 
-        filter(engagement_level %in% input$activity_el_sel) %>% 
-        group_by(engagement_level, activity_type) %>%
-        summarise(activity_access_count = n()) %>% 
-        mutate(activity_access_percent = round(activity_access_count / sum(activity_access_count) * 100, 1)) %>% 
-        arrange(desc(activity_access_percent))
-      activity_stats
-    })
-    
+  
+  activity_stats <- reactive({
+    activity_stats <- clicks_activity_df() %>% 
+      filter(engagement_level %in% input$activity_el_sel) %>% 
+      group_by(engagement_level, activity_type) %>%
+      summarise(activity_access_count = n()) %>% 
+      mutate(activity_access_percent = round(activity_access_count / sum(activity_access_count) * 100, 1)) %>% 
+      arrange(desc(activity_access_percent))
+    activity_stats
+  })
+  
   
   output$fig4 <- renderHighchart({
     hchart(activity_stats(), "column", hcaes(x = activity_type, y = activity_access_percent, group = engagement_level), 
@@ -321,7 +327,8 @@ server <- function(input, output, session) {
         enabled = TRUE) 
   })
   
-  # Merging with student info data frame
+
+  
   clicks_student_df <- reactive({
     clicks_student_df <- merge.data.table(student, clicks_df2(), by = "id_student")
     clicks_student_df
@@ -439,7 +446,7 @@ server <- function(input, output, session) {
   
   output$fig9 <- renderHighchart({
     hchart(prev_attempts_stats(), "column", hcaes(x = num_of_prev_attempts, 
-                                                y = percentage_of_students, group = engagement_level), 
+                                                  y = percentage_of_students, group = engagement_level), 
            dataLabels = list(enabled = TRUE, format = "{y}%")) %>% 
       hc_title(
         text = paste0("Number of Previous Attempts in Course according to each Engagement Level")
@@ -464,7 +471,7 @@ server <- function(input, output, session) {
   
   output$fig10 <- renderHighchart({
     hchart(final_results_stats(), "column", hcaes(x = final_result, 
-                                                y = percentage_of_students, group = engagement_level), 
+                                                  y = percentage_of_students, group = engagement_level), 
            dataLabels = list(enabled = TRUE, format = "{y}%")) %>% 
       hc_title(
         text = paste0("Student Final Academic Outcome in each Engagement Level")
@@ -480,7 +487,7 @@ server <- function(input, output, session) {
   output$region_el_query <- renderUI({
     selectizeInput('region_el_sel',
                    label = "Select Engagement Level(s) to Visualise/Compare",
-                   choices = 1:6,
+                   choices = 1:gmm_model()$G,
                    selected = 1:3,
                    multiple = TRUE,
                    options = list(maxItems = 3))
@@ -511,6 +518,49 @@ server <- function(input, output, session) {
   })
   
   
+  # Filename that includes date and time
+  file_path <- reactive({
+    file_path <- Sys.Date() %>% # now()
+      str_replace_all("[[:punct:]]", "_") %>%
+      str_replace(" ", "T") %>%
+      str_c("_student_engagement_report.html")
+  })
+  
+  # Report file download
+  output$report <- downloadHandler(
+    # Downloaded file name
+    filename = file_path(),
+    content = function(file) {
+      # Copy the report file to a temporary directory before processing it, in
+      # case we don't have write permissions to the current working dir (which
+      # can happen when deployed).
+      tempReport <- file.path(tempdir(), "student_engagement_report.Rmd")
+      file.copy("student_engagement_report.Rmd", tempReport, overwrite = TRUE)
+      
+      # Set up parameters to pass to Rmd document
+      params <- list(year_semester = input$sel_year_sem,
+                     date_period = input$sel_date_period,
+                     e_levels = input$gmm_el)
+      id <- showNotification(
+        "Rendering report...",
+        duration = NULL,
+        closeButton = FALSE,
+        type = "message"
+      )
+      on.exit(removeNotification(id), add = TRUE)
+      
+      # Knit the document, passing in the `params` list, and eval it in a
+      # child of the global environment (this isolates the code in the document
+      # from the code in this app).
+      rmarkdown::render(
+        input = "student_engagement_report.Rmd",
+        output_format = "html_document",
+        output_file = file,
+        params = params,
+        envir = new.env()
+      )
+    }
+  )
   
   
   
@@ -518,5 +568,5 @@ server <- function(input, output, session) {
   
   
   
-
+  
 }
