@@ -25,7 +25,7 @@ Knowledge Discovery in Database (KDD) Methodology <br>
   - To determine low engaged students online
   - To understand the different students engaging with online learning platforms
   - To perform student segmentation 
-  - To provide personalised support students to students engaging with the platforms differently
+  - To provide personalised support to students engaging with the platforms differently
 
 ## Resources 
 **RStudio Version:** 2022.07.1 Build 554 <br>
