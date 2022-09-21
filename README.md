@@ -10,11 +10,9 @@ Web-based Clustering Application Using a Shiny Framework for Determining Student
   - `Davies-Bouldin Index (DBI):`  Calculates the average similarity between each cluster and its most similar one, used to indicate well-partitioned clusters - [DBI scikit-learn](https://scikit-learn.org/stable/modules/generated/sklearn.metrics.davies_bouldin_score.html#sklearn.metrics.davies_bouldin_score)
 - More information on clustering metrics: https://scikit-learn.org/stable/modules/clustering.html
 - Built a R Shiny dashboard with three main functionalities: `GMM cluster Analysis`, `User Guide`, `Descriptive Analysis`
-- Open University Learning Analytics Dataset (OULAD): https://analyse.kmi.open.ac.uk/open_dataset
 
 ## Methodology 
 Knowledge Discovery in Database (KDD) Methodology
-
 
 ## Context 
 - Higher Educational Institutions are greatly relying on online learning platforms, such as Moodle, Blackboard, Canvas and etc to assess, communicate and share resources with students. 
@@ -24,6 +22,14 @@ Knowledge Discovery in Database (KDD) Methodology
   - To understand the different students engaging with online learning platforms
   - To perform student segmentation 
   - To provide personalised support students to students engaging with the platforms differently
+
+## Resources 
+**R Version:** RStudio 2022.07.1+554 "Spotted Wakerobin" Release (7872775ebddc40635780ca1ed238934c3345c5de, 2022-07-22) for Windows
+Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) QtWebEngine/5.12.8 Chrome/69.0.3497.128 Safari/537.36
+**Libraries:** tidyverse, mclust, highcharter, shiny, bs4Dash, waiter, shinycssloaders, DT, callr, data.table, rintrojs, readxl, lubridate, oulad
+**Open University Learning Analytics Dataset (OULAD):** https://analyse.kmi.open.ac.uk/open_dataset
+
+
 
 
  
