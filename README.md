@@ -12,7 +12,8 @@ Web-based Clustering Application Using a Shiny Framework for Determining Student
 - Built a R Shiny dashboard with three main functionalities: `GMM cluster Analysis`, `User Guide`, `Descriptive Analysis`
 
 ## Methodology 
-Knowledge Discovery in Database (KDD) Methodology
+Knowledge Discovery in Database (KDD) Methodology <br>
+![KDD Methodology](https://github.com/Ellie190/Student-Segmentation/blob/main/Images/img1.png) <br> <br>
 
 ## Context 
 - Higher Educational Institutions are greatly relying on online learning platforms, such as Moodle, Blackboard, Canvas and etc to assess, communicate and share resources with students. 
@@ -28,7 +29,12 @@ Knowledge Discovery in Database (KDD) Methodology
 **Libraries:** `tidyverse`, `mclust`, `highcharter`, `shiny`, `bs4Dash`, `waiter`, `shinycssloaders`, `DT`, `callr`, `data.table`, `rintrojs`, `readxl`, `lubridate`, `oulad` <br>
 **Open University Learning Analytics Dataset (OULAD):** https://analyse.kmi.open.ac.uk/open_dataset
 
-
+## Dashboard Snippets
+![User Modal](https://github.com/Ellie190/Student-Segmentation/blob/main/Images/img2.png) <br><br>
+![User Guide](https://github.com/Ellie190/Student-Segmentation/blob/main/Images/img3.png) <br><br>
+![GMM Data Analysis Tab](https://github.com/Ellie190/Student-Segmentation/blob/main/Images/img4.png) <br><br>
+![Instructional Methods Tab](https://github.com/Ellie190/Student-Segmentation/blob/main/Images/img5.png) <br><br>
+![Student Characteristics Tab](https://github.com/Ellie190/Student-Segmentation/blob/main/Images/img6.png)
 
 
  
