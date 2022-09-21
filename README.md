@@ -16,7 +16,7 @@ https://ds-analytics.shinyapps.io/Student-Segmentation/
 
 ## Methodology 
 Knowledge Discovery in Database (KDD) Methodology <br>
-![KDD Methodology](https://github.com/Ellie190/Student-Segmentation/blob/main/Images/img1.png) <br> <br>
+![KDD Methodology](https://github.com/Ellie190/Student-Segmentation/blob/main/Images/img1.png) 
 
 ## Context 
 - Higher Educational Institutions are greatly relying on online learning platforms, such as Moodle, Blackboard, Canvas and etc to assess, communicate and share resources with students. 
