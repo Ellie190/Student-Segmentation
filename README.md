@@ -1,6 +1,9 @@
 # Student-Segmentation
 Web-based Clustering Application Using a Shiny Framework for Determining Student Engagement Levels in Virtual Learning Environments
 
+## Application Access
+https://ds-analytics.shinyapps.io/Student-Segmentation/
+
 ## Project Overview 
 - Explored two clustering algorithms - Gaussian Mixture Model and K-means 
 - Compared and evaluated the clutering algorithms using the following metrics:
