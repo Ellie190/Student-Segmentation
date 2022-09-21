@@ -24,8 +24,7 @@ Knowledge Discovery in Database (KDD) Methodology
   - To provide personalised support students to students engaging with the platforms differently
 
 ## Resources 
-**R Version:** RStudio 2022.07.1+554 "Spotted Wakerobin" Release (7872775ebddc40635780ca1ed238934c3345c5de, 2022-07-22) for Windows
-Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) QtWebEngine/5.12.8 Chrome/69.0.3497.128 Safari/537.36 <br>
+**RStudio Version:** 2022.07.1 Build 554 <br>
 **Libraries:** `tidyverse`, `mclust`, `highcharter`, `shiny`, `bs4Dash`, `waiter`, `shinycssloaders`, `DT`, `callr`, `data.table`, `rintrojs`, `readxl`, `lubridate`, `oulad` <br>
 **Open University Learning Analytics Dataset (OULAD):** https://analyse.kmi.open.ac.uk/open_dataset
 
