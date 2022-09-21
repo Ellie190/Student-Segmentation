@@ -44,6 +44,7 @@ knitr::opts_chunk$set(
 
 
 library(tidyverse)
+library(mclust)
 library(janitor)
 library(readxl)
 library(DT)
